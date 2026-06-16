@@ -552,10 +552,16 @@ function ir(p){
    ============================================================ */
 let L=null;
 function getMazo(id,propio){return (propio?S.misMazos:MAZOS).find(m=>m.id===id)||MAZOS.find(m=>m.id===id)||S.misMazos.find(m=>m.id===id);}
+// baraja las opciones de una pregunta de opción múltiple para que la correcta no quede siempre en la misma posición
+function barajarMulti(c){
+  const idx=c.opciones.map((_,i)=>i);
+  for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=idx[i];idx[i]=idx[j];idx[j]=t;}
+  return Object.assign({},c,{opciones:idx.map(k=>c.opciones[k]),correcta:idx.indexOf(c.correcta)});
+}
 function iniciarLeccion(id,propio){
   const m=getMazo(id,propio);
   if(!m||!m.cards.length){toast('Ese mazo no tiene tarjetas');return;}
-  L={mazo:m,propio,cola:m.cards.map((c,i)=>({c,i})),idx:0,vidas:3,aciertos:0,fallos:0,total:m.cards.length,xpGan:0,contestada:false,sel:null};
+  L={mazo:m,propio,cola:m.cards.map((c,i)=>({c:c.tipo==='multi'?barajarMulti(c):c,i})),idx:0,vidas:3,aciertos:0,fallos:0,total:m.cards.length,xpGan:0,contestada:false,sel:null};
   document.querySelectorAll('.pantalla').forEach(x=>x.classList.remove('activa'));
   document.getElementById('p-leccion').classList.add('activa');
   document.getElementById('nav').style.display='none';
