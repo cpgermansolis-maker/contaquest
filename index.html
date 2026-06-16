@@ -80,6 +80,7 @@ button{font-family:var(--fuente);cursor:pointer;border:none;font-weight:800}
 .btn:active{transform:translateY(4px);box-shadow:none}
 .btn:disabled{background:var(--gris-cl);box-shadow:0 4px 0 #cfcfcf;color:#999;cursor:not-allowed}
 .btn.azul{background:var(--azul);box-shadow:0 4px 0 var(--azul-osc)}
+.btn.morado{background:var(--morado);box-shadow:0 4px 0 #a44fd6}
 .btn.rojo{background:var(--rojo);box-shadow:0 4px 0 var(--rojo-osc)}
 .btn.ghost{background:var(--blanco);color:var(--gris);box-shadow:0 4px 0 var(--gris-cl);border:2px solid var(--gris-cl)}
 .btn.sm{display:inline-block;width:auto;padding:11px 20px;font-size:.85rem}
@@ -255,6 +256,9 @@ Startup: institución diseñada para crear algo nuevo con incertidumbre extrema
 - Empresario: se forma con educación y liderazgo"></textarea>
       <div class="hint">💡 Detecto automáticamente líneas tipo <code>Concepto: explicación</code> y limpio viñetas, números y negritas. También puedes usar <code>concepto :: respuesta</code> para control total. Los títulos sin explicación se ignoran.</div>
       <div style="margin-top:14px"></div>
+      <button class="btn morado" id="btn-ia" onclick="generarConIA()">✨ Generar tarjetas con IA</button>
+      <div class="hint" style="background:#f6ecff;border-color:#e3c6ff;color:#6b21a8">🤖 Pega tu resumen de clase arriba y la IA crea tarjetas de calidad. Requiere configurar tu generador en <b>Perfil</b> (una sola vez).</div>
+      <div style="margin-top:14px"></div>
       <button class="btn" id="btn-crear" onclick="guardarMazo()">Crear mazo de estudio</button>
     </div>
 
@@ -314,6 +318,16 @@ Startup: institución diseñada para crear algo nuevo con incertidumbre extrema
       <div class="mazo"><div class="emoji c-verde">✅</div><div class="txt"><b id="pf-aciertos">0</b><small>Respuestas correctas</small></div></div>
       <div class="mazo"><div class="emoji c-azul">📘</div><div class="txt"><b id="pf-lecciones">0</b><small>Lecciones completadas</small></div></div>
     </div>
+    <div class="form-card">
+      <h3>🤖 Generador con IA</h3>
+      <p class="sub">Pega aquí la URL de tu proxy (Apps Script) para crear tarjetas automáticamente con IA. Ver instructivo IA-SETUP.md.</p>
+      <label class="lbl">URL del generador (termina en /exec)</label>
+      <input class="fld" id="pf-ia-url" placeholder="https://script.google.com/.../exec" onchange="guardarIaUrl(this.value)">
+      <label class="lbl">Palabra secreta (APP_TOKEN, opcional)</label>
+      <input class="fld" id="pf-ia-token" placeholder="la misma que pusiste en el script" onchange="guardarIaToken(this.value)">
+      <div class="hint">🔒 Estos datos se guardan solo en este dispositivo, no en el sitio público.</div>
+    </div>
+
     <div class="form-card">
       <label class="lbl">Tu nombre</label>
       <input class="fld" id="pf-nombre" placeholder="Escribe tu nombre" onchange="guardarNombre(this.value)">
@@ -408,7 +422,7 @@ const MAZOS = [
    ESTADO
    ============================================================ */
 const KEY='contaquest_v2';
-const estadoBase={nombre:'',xp:0,gemas:0,racha:0,ultimoDia:'',aciertos:0,lecciones:0,progresoMazo:{},cursos:[],misMazos:[],profes:[],seed:false};
+const estadoBase={nombre:'',xp:0,gemas:0,racha:0,ultimoDia:'',aciertos:0,lecciones:0,progresoMazo:{},cursos:[],misMazos:[],profes:[],iaUrl:'',iaToken:'',seed:false};
 let S=cargar();
 
 function cargar(){
@@ -762,6 +776,27 @@ function cancelarEdicion(){
   document.getElementById('btn-crear').textContent='Crear mazo de estudio';
   document.getElementById('banner-edit').innerHTML='';
 }
+// genera tarjetas con IA a partir del texto pegado (usa el proxy de Apps Script)
+async function generarConIA(){
+  if(!S.iaUrl){toast('Primero configura tu generador en Perfil');ir('perfil');return;}
+  const notas=document.getElementById('nm-pegado').value.trim();
+  if(notas.length<10){toast('Pega primero tus apuntes arriba 👆');return;}
+  const btn=document.getElementById('btn-ia'), orig=btn.textContent;
+  btn.disabled=true; btn.textContent='✨ Generando…';
+  try{
+    const r=await fetch(S.iaUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({notes:notas,token:S.iaToken||''})});
+    const data=await r.json();
+    if(data.error){toast('IA: '+data.error);return;}
+    const cards=data.cards||[];
+    if(!cards.length){toast('La IA no generó tarjetas');return;}
+    document.getElementById('nm-pegado').value=cards.map(c=>`${c.q} :: ${c.a}`).join('\n');
+    toast('✨ '+cards.length+' tarjetas generadas. Revísalas y dale Crear.');
+  }catch(err){
+    toast('No se pudo conectar con tu IA. Revisa la URL.');
+  }finally{
+    btn.disabled=false; btn.textContent=orig;
+  }
+}
 function borrarMazo(id){
   if(!confirm('¿Borrar este mazo?'))return;
   S.misMazos=S.misMazos.filter(m=>m.id!==id); delete S.progresoMazo[id];
@@ -920,8 +955,12 @@ function pintarPerfil(){
   document.getElementById('pf-aciertos').textContent=S.aciertos;
   document.getElementById('pf-lecciones').textContent=S.lecciones;
   document.getElementById('pf-nombre').value=S.nombre;
+  document.getElementById('pf-ia-url').value=S.iaUrl||'';
+  document.getElementById('pf-ia-token').value=S.iaToken||'';
 }
 function guardarNombre(v){S.nombre=v.trim();guardar();toast('Nombre guardado');}
+function guardarIaUrl(v){S.iaUrl=v.trim();guardar();toast('URL del generador guardada');}
+function guardarIaToken(v){S.iaToken=v.trim();guardar();}
 function reiniciarTodo(){
   if(!confirm('Esto borra TODO: progreso, mazos, cursos y profes. ¿Continuar?'))return;
   S=JSON.parse(JSON.stringify(estadoBase));
