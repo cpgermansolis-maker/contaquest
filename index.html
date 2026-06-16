@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#58cc02">
+<title>ContaQuest · Aprende finanzas jugando</title>
+<style>
+/* ============================================================
+   ContaQuest — App de estudio estilo Duolingo
+   Dirección y Administración de PyMEs · BUAP
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+:root{
+  --verde:#58cc02; --verde-osc:#46a302;
+  --azul:#1cb0f6; --azul-osc:#1899d6;
+  --morado:#ce82ff; --amarillo:#ffc800;
+  --naranja:#ff9600; --rojo:#ff4b4b; --rojo-osc:#ea2b2b;
+  --tinta:#3c3c3c; --gris:#777; --gris-cl:#e5e5e5;
+  --gris-bg:#f7f7f7; --blanco:#fff;
+  --radio:18px;
+  --fuente:'Nunito',-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:var(--fuente);background:var(--gris-bg);color:var(--tinta);font-weight:700;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+button{font-family:var(--fuente);cursor:pointer;border:none;font-weight:800}
+
+#app{max-width:540px;margin:0 auto;min-height:100%;padding-bottom:90px;position:relative}
+.pantalla{display:none;animation:entra .35s ease}
+.pantalla.activa{display:block}
+@keyframes entra{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:50;background:var(--blanco);display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:2px solid var(--gris-cl)}
+.topbar .logo{font-size:1.25rem;font-weight:900;color:var(--verde);margin-right:auto;letter-spacing:-.5px}
+.topbar .logo span{color:var(--azul)}
+.stat{display:flex;align-items:center;gap:5px;font-weight:900;font-size:1.05rem}
+.stat .ic{font-size:1.25rem}
+.stat.racha{color:var(--naranja)} .stat.xp{color:var(--amarillo)} .stat.gemas{color:var(--azul)}
+
+/* hero */
+.hero{padding:26px 20px 10px;text-align:center}
+.hero h1{font-size:1.6rem;font-weight:900;letter-spacing:-.5px}
+.hero p{color:var(--gris);font-weight:700;margin-top:6px;font-size:.98rem}
+
+.nivel-box{background:var(--blanco);border:2px solid var(--gris-cl);border-radius:var(--radio);margin:16px 20px;padding:16px 18px}
+.nivel-box .nivel-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.nivel-box .nivel-top b{font-size:1.05rem}
+.nivel-box .nivel-top small{color:var(--gris);font-weight:800}
+.barra{background:var(--gris-cl);border-radius:99px;height:16px;overflow:hidden}
+.barra>i{display:block;height:100%;background:var(--verde);border-radius:99px;transition:width .6s cubic-bezier(.2,.8,.2,1);box-shadow:inset 0 -4px 0 rgba(0,0,0,.12)}
+
+.seccion-tit{padding:14px 22px 6px;font-size:.8rem;font-weight:900;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px}
+
+/* mazos */
+.mazos{padding:4px 16px}
+.mazo{display:flex;align-items:center;gap:14px;background:var(--blanco);border:2px solid var(--gris-cl);border-bottom-width:5px;border-radius:var(--radio);padding:16px;margin-bottom:14px;width:100%;text-align:left;transition:transform .08s,box-shadow .1s}
+.mazo:active{transform:translateY(2px);border-bottom-width:2px}
+.mazo .emoji{width:56px;height:56px;flex:none;border-radius:16px;display:grid;place-items:center;font-size:1.8rem;color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.15)}
+.mazo .txt{flex:1;min-width:0}
+.mazo .txt b{display:block;font-size:1.05rem;font-weight:900}
+.mazo .txt small{color:var(--gris);font-weight:700;font-size:.85rem}
+.mazo .mini-barra{height:9px;background:var(--gris-cl);border-radius:99px;margin-top:8px;overflow:hidden}
+.mazo .mini-barra>i{display:block;height:100%;background:var(--verde)}
+.mazo .flecha{color:var(--gris-cl);font-size:1.6rem;font-weight:900}
+.mazo .acciones{display:flex;gap:2px}
+.mazo .acciones button{background:none;font-size:1.15rem;padding:6px;line-height:1;border-radius:10px}
+.mazo .acciones button:active{background:var(--gris-bg)}
+
+.c-verde{background:var(--verde)} .c-azul{background:var(--azul)} .c-morado{background:var(--morado)}
+.c-naranja{background:var(--naranja)} .c-amarillo{background:var(--amarillo)} .c-rojo{background:var(--rojo)}
+.c-gris{background:#9aa0a6}
+
+/* botones */
+.btn{display:block;width:100%;padding:15px;border-radius:16px;font-size:1rem;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#fff;background:var(--verde);box-shadow:0 4px 0 var(--verde-osc);transition:transform .06s,box-shadow .06s}
+.btn:active{transform:translateY(4px);box-shadow:none}
+.btn:disabled{background:var(--gris-cl);box-shadow:0 4px 0 #cfcfcf;color:#999;cursor:not-allowed}
+.btn.azul{background:var(--azul);box-shadow:0 4px 0 var(--azul-osc)}
+.btn.rojo{background:var(--rojo);box-shadow:0 4px 0 var(--rojo-osc)}
+.btn.ghost{background:var(--blanco);color:var(--gris);box-shadow:0 4px 0 var(--gris-cl);border:2px solid var(--gris-cl)}
+.btn.sm{display:inline-block;width:auto;padding:11px 20px;font-size:.85rem}
+
+/* lección */
+.leccion-top{display:flex;align-items:center;gap:14px;padding:14px 18px}
+.leccion-top .cerrar{font-size:1.7rem;color:var(--gris);background:none;font-weight:900;line-height:1}
+.leccion-top .progreso{flex:1;height:16px;background:var(--gris-cl);border-radius:99px;overflow:hidden}
+.leccion-top .progreso>i{display:block;height:100%;background:var(--verde);border-radius:99px;transition:width .4s}
+.leccion-top .vidas{color:var(--rojo);font-weight:900;font-size:1.1rem}
+.leccion-cuerpo{padding:18px 22px}
+.tag-tipo{font-size:.78rem;font-weight:900;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.pregunta{font-size:1.35rem;font-weight:900;line-height:1.3;margin-bottom:22px}
+.opciones{display:flex;flex-direction:column;gap:12px}
+.opcion{background:var(--blanco);border:2px solid var(--gris-cl);border-bottom-width:4px;border-radius:14px;padding:15px 16px;font-size:1.02rem;font-weight:800;text-align:left;transition:transform .06s}
+.opcion:active{transform:translateY(2px)}
+.opcion.sel{border-color:var(--azul);background:#ddf4ff;color:var(--azul-osc)}
+.opcion.bien{border-color:var(--verde);background:#d7ffb8;color:var(--verde-osc)}
+.opcion.mal{border-color:var(--rojo);background:#ffdfe0;color:var(--rojo-osc)}
+.opcion:disabled{cursor:default}
+
+.flash{perspective:1200px;margin-bottom:22px}
+.flash-inner{position:relative;width:100%;min-height:240px;transition:transform .55s;transform-style:preserve-3d;cursor:pointer}
+.flash.volteada .flash-inner{transform:rotateY(180deg)}
+.flash-cara{position:absolute;inset:0;backface-visibility:hidden;border-radius:20px;padding:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border:2px solid var(--gris-cl);border-bottom-width:5px;background:var(--blanco)}
+.flash-cara .mini{font-size:.78rem;font-weight:900;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+.flash-cara .grande{font-size:1.3rem;font-weight:900;line-height:1.35}
+.flash-cara.atras{transform:rotateY(180deg);background:#f0f9ff;border-color:#bce4fb}
+.flash-cara .pista{margin-top:16px;color:var(--azul);font-weight:800;font-size:.85rem}
+
+.feedback{position:fixed;left:0;right:0;bottom:0;z-index:60;max-width:540px;margin:0 auto;padding:18px 22px 26px;border-radius:24px 24px 0 0;transform:translateY(110%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.feedback.show{transform:none}
+.feedback.ok{background:#d7ffb8} .feedback.err{background:#ffdfe0}
+.feedback .fb-tit{display:flex;align-items:center;gap:10px;font-size:1.2rem;font-weight:900;margin-bottom:6px}
+.feedback.ok .fb-tit{color:var(--verde-osc)} .feedback.err .fb-tit{color:var(--rojo-osc)}
+.feedback .fb-exp{font-weight:700;color:var(--tinta);margin-bottom:14px;line-height:1.4;font-size:.95rem}
+.feedback.err .fb-exp{color:#a33}
+.barra-accion{position:fixed;left:0;right:0;bottom:0;max-width:540px;margin:0 auto;padding:16px 22px 24px;background:var(--blanco);border-top:2px solid var(--gris-cl);z-index:55}
+
+.fin{padding:40px 24px;text-align:center}
+.fin .trofeo{font-size:5rem;animation:pop .5s}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+.fin h2{font-size:1.7rem;font-weight:900;margin:10px 0;color:var(--amarillo)}
+.fin .resumen{display:flex;gap:12px;justify-content:center;margin:22px 0}
+.fin .rcard{background:var(--amarillo);border-radius:16px;padding:2px;flex:1;max-width:150px}
+.fin .rcard .in{background:var(--blanco);border-radius:14px;padding:14px 8px;margin:2px}
+.fin .rcard.azul{background:var(--azul)}
+.fin .rcard small{display:block;color:var(--gris);font-size:.72rem;text-transform:uppercase;letter-spacing:1px}
+.fin .rcard b{font-size:1.5rem}
+
+/* nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:540px;margin:0 auto;background:var(--blanco);border-top:2px solid var(--gris-cl);display:flex;justify-content:space-around;padding:8px 2px}
+.nav button{background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 10px;border-radius:14px;color:var(--gris);font-size:.66rem;font-weight:900;text-transform:uppercase;letter-spacing:.3px}
+.nav button .ic{font-size:1.5rem}
+.nav button.on{color:var(--verde);background:#e9ffd6}
+
+/* formularios */
+.form-card{background:var(--blanco);border:2px solid var(--gris-cl);border-radius:var(--radio);padding:18px;margin:14px 18px}
+.form-card h3{font-size:1.1rem;margin-bottom:4px}
+.form-card p.sub{color:var(--gris);font-weight:700;font-size:.88rem;margin-bottom:6px}
+label.lbl{display:block;font-size:.8rem;font-weight:900;color:var(--gris);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px}
+input.fld,textarea.fld,select.fld{width:100%;font-family:var(--fuente);font-weight:700;font-size:1rem;border:2px solid var(--gris-cl);border-radius:14px;padding:13px 14px;background:var(--gris-bg);color:var(--tinta)}
+input.fld:focus,textarea.fld:focus,select.fld:focus{outline:none;border-color:var(--azul);background:#fff}
+textarea.fld{min-height:130px;resize:vertical;line-height:1.5}
+.hint{background:#fff7d6;border:2px solid #ffe680;border-radius:12px;padding:10px 12px;font-size:.82rem;font-weight:700;color:#8a6d00;margin-top:8px;line-height:1.45}
+.hint code{background:#fff;padding:1px 6px;border-radius:6px;color:#b00;font-weight:900}
+
+.chip-fila{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{background:var(--gris-bg);border:2px solid var(--gris-cl);border-radius:99px;padding:7px 13px;font-size:.85rem;font-weight:800;cursor:pointer}
+.chip.on{background:#ddf4ff;border-color:var(--azul);color:var(--azul-osc)}
+
+.fila-curso{display:flex;align-items:center;gap:10px;background:var(--gris-bg);border:2px solid var(--gris-cl);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-weight:800}
+.fila-curso .ce{font-size:1.3rem} .fila-curso .cn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fila-curso button{background:none;font-size:1.1rem;padding:4px}
+
+.banner-edit{background:#fff3cd;border:2px solid #ffe680;color:#8a6d00;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-weight:800;display:flex;align-items:center;gap:8px;font-size:.9rem}
+.banner-edit button{margin-left:auto;background:none;color:var(--rojo);font-size:1.2rem}
+
+.vacio{text-align:center;color:var(--gris);padding:30px 24px;font-weight:700}
+.vacio .big{font-size:3rem;margin-bottom:10px}
+
+/* recordatorios profes */
+.reco-card{background:var(--blanco);border:2px solid var(--gris-cl);border-bottom-width:5px;border-radius:var(--radio);padding:14px;margin-bottom:12px;display:flex;gap:12px;align-items:center;width:100%;text-align:left}
+.reco-card:active{transform:translateY(2px)}
+.reco-card .av{width:48px;height:48px;flex:none;border-radius:14px;display:grid;place-items:center;font-size:1.5rem;color:#fff;box-shadow:inset 0 -4px 0 rgba(0,0,0,.15)}
+.reco-card .info{flex:1;min-width:0}
+.reco-card .info b{display:block}
+.reco-card .info small{color:var(--gris);font-weight:700;font-size:.84rem;display:block;line-height:1.3}
+.badge{display:inline-block;font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:99px;margin-top:4px}
+.badge.alto{background:#ffdfe0;color:var(--rojo-osc)} .badge.medio{background:#fff3cd;color:#8a6d00} .badge.bajo{background:#d7ffb8;color:var(--verde-osc)}
+
+/* ficha profe / recomendaciones */
+.reco-lista{margin:6px 0}
+.reco-item{display:flex;gap:10px;background:var(--gris-bg);border:2px solid var(--gris-cl);border-radius:12px;padding:12px 14px;margin-bottom:10px;font-weight:700;font-size:.95rem;line-height:1.35}
+.dato{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--gris-cl);font-size:.92rem}
+.dato:last-child{border:none}
+.dato span{color:var(--gris);font-weight:800}
+
+.toast{position:fixed;top:74px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--tinta);color:#fff;padding:12px 20px;border-radius:99px;font-weight:800;font-size:.9rem;z-index:200;opacity:0;transition:.3s;pointer-events:none;box-shadow:0 6px 16px rgba(0,0,0,.25);max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.pie{text-align:center;color:#bbb;font-size:.72rem;font-weight:700;padding:24px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar" id="topbar">
+    <div class="logo">Conta<span>Quest</span></div>
+    <div class="stat racha"><span class="ic">🔥</span><span id="st-racha">0</span></div>
+    <div class="stat gemas"><span class="ic">💎</span><span id="st-gemas">0</span></div>
+    <div class="stat xp"><span class="ic">⭐</span><span id="st-xp">0</span></div>
+  </div>
+
+  <!-- HOME -->
+  <section class="pantalla activa" id="p-home">
+    <div class="hero">
+      <h1 id="saludo">¡Hola! 👋</h1>
+      <p>Domina los cargos y abonos antes de la próxima clase 💪</p>
+    </div>
+    <div class="nivel-box">
+      <div class="nivel-top"><b id="nivel-nombre">Nivel 1 · Aprendiz</b><small id="nivel-xp">0 / 100 XP</small></div>
+      <div class="barra"><i id="nivel-barra" style="width:0%"></i></div>
+    </div>
+
+    <div id="recordatorios"></div>
+
+    <div class="seccion-tit">📚 Biblioteca general</div>
+    <div class="mazos" id="lista-mazos"></div>
+
+    <div id="home-cursos"></div>
+
+    <div class="pie">ContaQuest · Dirección y Administración de PyMEs 📚</div>
+  </section>
+
+  <!-- LECCIÓN -->
+  <section class="pantalla" id="p-leccion">
+    <div class="leccion-top">
+      <button class="cerrar" onclick="salirLeccion()">✕</button>
+      <div class="progreso"><i id="lec-prog" style="width:0%"></i></div>
+      <div class="vidas" id="lec-vidas">❤️ 3</div>
+    </div>
+    <div class="leccion-cuerpo" id="lec-cuerpo"></div>
+  </section>
+
+  <!-- APUNTES / MIS MAZOS -->
+  <section class="pantalla" id="p-crear">
+    <div class="hero"><h1>📝 Mis apuntes</h1><p>Crea un mazo por cada clase y organízalo por curso</p></div>
+
+    <div class="form-card">
+      <h3>Mis cursos</h3>
+      <p class="sub">Organiza tus mazos por curso.</p>
+      <div id="lista-cursos" style="margin-top:8px"></div>
+      <button class="btn ghost sm" onclick="agregarCurso()">＋ Agregar curso</button>
+    </div>
+
+    <div class="form-card" id="form-mazo">
+      <div id="banner-edit"></div>
+      <h3 id="form-mazo-tit">Nuevo mazo (clase)</h3>
+      <p class="sub">Crea el mazo con el tema de la clase de hoy.</p>
+      <label class="lbl">Nombre del mazo</label>
+      <input class="fld" id="nm-nombre" placeholder="Ej. Clase 3 · Asientos contables">
+      <label class="lbl">¿De qué curso es?</label>
+      <select class="fld" id="nm-curso"></select>
+      <label class="lbl">Icono</label>
+      <div class="chip-fila" id="nm-iconos"></div>
+      <label class="lbl">Pega tus apuntes (una tarjeta por renglón, con ::)</label>
+      <textarea class="fld" id="nm-pegado" placeholder="¿Qué cuenta se carga al comprar mercancía de contado? :: Almacén (es activo y aumenta)
+La partida doble dice que :: a todo cargo corresponde un abono por el mismo importe
+El Debe es el lado :: izquierdo de la cuenta"></textarea>
+      <div class="hint">💡 Formato: <code>pregunta :: respuesta</code> en cada renglón. También sirve <code>=</code> o <code>-</code>. Los renglones vacíos se ignoran.</div>
+      <div style="margin-top:14px"></div>
+      <button class="btn" id="btn-crear" onclick="guardarMazo()">Crear mazo de estudio</button>
+    </div>
+
+    <div id="mis-mazos-cont"></div>
+    <div style="height:30px"></div>
+  </section>
+
+  <!-- PROFES -->
+  <section class="pantalla" id="p-profes">
+    <div class="hero"><h1>👔 Mis profes</h1><p>Registra a cada profesor y recibe recomendaciones para caerle bien</p></div>
+
+    <div class="form-card" id="form-profe">
+      <div id="banner-profe"></div>
+      <h3 id="form-profe-tit">Nuevo profesor</h3>
+      <p class="sub">Anota lo que sabes de él para que tu coach te aconseje.</p>
+      <label class="lbl">Nombre del profe</label>
+      <input class="fld" id="pr-nombre" placeholder="Ej. Prof. Ramírez">
+      <label class="lbl">Curso</label>
+      <select class="fld" id="pr-curso"></select>
+      <label class="lbl">Nivel de exigencia</label>
+      <div class="chip-fila" id="pr-exig"></div>
+      <label class="lbl">¿Cómo hay que vestir?</label>
+      <div class="chip-fila" id="pr-vest"></div>
+      <label class="lbl">¿Qué valora? (toca varios)</label>
+      <div class="chip-fila" id="pr-valora"></div>
+      <label class="lbl">¿Qué le molesta? (toca varios)</label>
+      <div class="chip-fila" id="pr-molesta"></div>
+      <label class="lbl">Notas libres (lo que dijo en clase)</label>
+      <textarea class="fld" id="pr-notas" placeholder="Ej. Dijo que siempre hay que entrar bien vestido y arreglado. Pregunta de sorpresa sobre cargos y abonos."></textarea>
+      <div style="margin-top:14px"></div>
+      <button class="btn" id="btn-profe" onclick="guardarProfe()">Guardar profesor</button>
+    </div>
+
+    <div class="seccion-tit">Mis profesores</div>
+    <div class="mazos" id="lista-profes"></div>
+    <div style="height:30px"></div>
+  </section>
+
+  <!-- FICHA DE PROFE (detalle + coach) -->
+  <section class="pantalla" id="p-profe-det">
+    <div class="leccion-top"><button class="cerrar" onclick="ir('profes')">‹</button><b style="font-size:1.1rem">Ficha del profe</b></div>
+    <div id="profe-det-cuerpo" style="padding:6px 18px"></div>
+    <div style="height:30px"></div>
+  </section>
+
+  <!-- PERFIL -->
+  <section class="pantalla" id="p-perfil">
+    <div class="hero"><h1>👤 Mi progreso</h1><p>Tu constancia es lo que te hará dominar el tema</p></div>
+    <div class="form-card" style="text-align:center">
+      <div style="font-size:3.4rem">🎓</div>
+      <h3 id="pf-nivel" style="margin-top:6px">Nivel 1 · Aprendiz</h3>
+      <p class="sub" id="pf-frase">Apenas empiezas. ¡A darle!</p>
+    </div>
+    <div class="mazos">
+      <div class="mazo"><div class="emoji c-naranja">🔥</div><div class="txt"><b id="pf-racha">0 días</b><small>Racha actual</small></div></div>
+      <div class="mazo"><div class="emoji c-amarillo">⭐</div><div class="txt"><b id="pf-xp">0 XP</b><small>Experiencia total</small></div></div>
+      <div class="mazo"><div class="emoji c-verde">✅</div><div class="txt"><b id="pf-aciertos">0</b><small>Respuestas correctas</small></div></div>
+      <div class="mazo"><div class="emoji c-azul">📘</div><div class="txt"><b id="pf-lecciones">0</b><small>Lecciones completadas</small></div></div>
+    </div>
+    <div class="form-card">
+      <label class="lbl">Tu nombre</label>
+      <input class="fld" id="pf-nombre" placeholder="Escribe tu nombre" onchange="guardarNombre(this.value)">
+      <div style="margin-top:14px"></div>
+      <button class="btn ghost" onclick="reiniciarTodo()">Reiniciar mi progreso</button>
+    </div>
+    <div style="height:30px"></div>
+  </section>
+
+  <!-- NAV -->
+  <nav class="nav" id="nav">
+    <button class="on" data-p="home" onclick="ir('home')"><span class="ic">🏠</span>Inicio</button>
+    <button data-p="crear" onclick="ir('crear')"><span class="ic">✏️</span>Apuntes</button>
+    <button data-p="profes" onclick="ir('profes')"><span class="ic">👔</span>Profes</button>
+    <button data-p="perfil" onclick="ir('perfil')"><span class="ic">👤</span>Perfil</button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ============================================================
+   CONTENIDO PRECARGADO (biblioteca general)
+   ============================================================ */
+const MAZOS = [
+  {id:'cargos-abonos', nombre:'Cargos y Abonos', desc:'La regla de oro de la contabilidad', icono:'⚖️', color:'c-verde', cards:[
+    {tipo:'multi', q:'¿Qué dice la regla de la PARTIDA DOBLE?', opciones:['A todo cargo corresponde un abono por el mismo importe','Todo se registra dos veces por seguridad','Cada cuenta tiene dos dueños','Siempre se cobra el doble'], correcta:0, exp:'No hay deudor sin acreedor. A todo cargo corresponde uno o varios abonos por la misma cantidad.'},
+    {tipo:'multi', q:'El CARGO se anota en el lado…', opciones:['Izquierdo (el Debe)','Derecho (el Haber)','Abajo','En ambos lados'], correcta:0, exp:'Cargar = anotar en el Debe = lado izquierdo de la cuenta T.'},
+    {tipo:'multi', q:'El ABONO se anota en el lado…', opciones:['Derecho (el Haber)','Izquierdo (el Debe)','Centro','Donde quepa'], correcta:0, exp:'Abonar = anotar en el Haber = lado derecho de la cuenta T.'},
+    {tipo:'multi', q:'Una cuenta de ACTIVO aumenta cuando se le…', opciones:['Carga','Abona','Cancela','Traspasa'], correcta:0, exp:'Activo: aumenta por el Debe (cargo) y disminuye por el Haber (abono).'},
+    {tipo:'multi', q:'Una cuenta de PASIVO aumenta cuando se le…', opciones:['Abona','Carga','Liquida','Reduce'], correcta:0, exp:'Pasivo: aumenta por el Haber (abono) y disminuye por el Debe (cargo).'},
+    {tipo:'multi', q:'El CAPITAL aumenta cuando se le…', opciones:['Abona','Carga','Retira','Gasta'], correcta:0, exp:'Capital: aumenta por abono y disminuye por cargo (igual que el pasivo).'},
+    {tipo:'multi', q:'Las cuentas de INGRESOS aumentan cuando se les…', opciones:['Abona','Carga','Difiere','Provisiona'], correcta:0, exp:'Los ingresos aumentan por el Haber (abono).'},
+    {tipo:'multi', q:'Las cuentas de GASTOS aumentan cuando se les…', opciones:['Carga','Abona','Acredita','Difiere'], correcta:0, exp:'Gastos y costos aumentan por el Debe (cargo).'},
+    {tipo:'multi', q:'Recibes dinero en CAJA. ¿Qué haces con la cuenta Caja?', opciones:['La cargo (activo que aumenta)','La abono','La cierro','No se mueve'], correcta:0, exp:'Caja es activo; si entra dinero aumenta, por lo tanto se CARGA.'},
+    {tipo:'multi', q:'Pagas a un PROVEEDOR. ¿Qué pasa con la cuenta Proveedores?', opciones:['Se carga (el pasivo disminuye)','Se abona','Aumenta','Desaparece'], correcta:0, exp:'Proveedores es pasivo; al pagar disminuye, y un pasivo disminuye por CARGO.'},
+    {tipo:'flash', q:'Regla rápida de ACTIVO', a:'Aumenta por CARGO ⬆️ · Disminuye por ABONO ⬇️'},
+    {tipo:'flash', q:'Regla rápida de PASIVO y CAPITAL', a:'Aumentan por ABONO ⬆️ · Disminuyen por CARGO ⬇️'},
+    {tipo:'flash', q:'Regla rápida de RESULTADOS', a:'Gastos aumentan por CARGO · Ingresos aumentan por ABONO'},
+  ]},
+  {id:'clasificacion', nombre:'Clasifica las cuentas', desc:'Activo, Pasivo o Capital', icono:'🗂️', color:'c-azul', cards:[
+    {tipo:'multi', q:'CAJA es una cuenta de…', opciones:['Activo','Pasivo','Capital','Resultados'], correcta:0, exp:'El dinero en efectivo es un bien de la empresa: Activo (circulante).'},
+    {tipo:'multi', q:'PROVEEDORES es una cuenta de…', opciones:['Pasivo','Activo','Capital','Ingreso'], correcta:0, exp:'Es una deuda por mercancía a crédito: Pasivo.'},
+    {tipo:'multi', q:'CLIENTES es una cuenta de…', opciones:['Activo','Pasivo','Capital','Gasto'], correcta:0, exp:'Es un derecho de cobro a nuestro favor: Activo.'},
+    {tipo:'multi', q:'CAPITAL SOCIAL es una cuenta de…', opciones:['Capital','Pasivo','Activo','Ingreso'], correcta:0, exp:'Es la aportación de los socios: Capital contable.'},
+    {tipo:'multi', q:'EQUIPO DE CÓMPUTO es una cuenta de…', opciones:['Activo','Pasivo','Gasto','Capital'], correcta:0, exp:'Bien que la empresa usará por años: Activo fijo (no circulante).'},
+    {tipo:'multi', q:'DOCUMENTOS POR PAGAR es…', opciones:['Pasivo','Activo','Capital','Ingreso'], correcta:0, exp:'Deuda respaldada por un título (pagaré): Pasivo.'},
+    {tipo:'multi', q:'MERCANCÍAS / ALMACÉN es…', opciones:['Activo','Pasivo','Gasto','Capital'], correcta:0, exp:'Inventario disponible para la venta: Activo circulante.'},
+    {tipo:'multi', q:'BANCOS es una cuenta de…', opciones:['Activo','Pasivo','Capital','Resultados'], correcta:0, exp:'Dinero depositado disponible: Activo circulante.'},
+    {tipo:'multi', q:'ACREEDORES DIVERSOS es…', opciones:['Pasivo','Activo','Capital','Ingreso'], correcta:0, exp:'Deudas distintas a proveedores (préstamos, servicios): Pasivo.'},
+    {tipo:'multi', q:'RENTA PAGADA es una cuenta de…', opciones:['Gasto (resultados)','Activo','Pasivo','Capital'], correcta:0, exp:'Es un gasto de operación: cuenta de resultados deudora.'},
+    {tipo:'flash', q:'¿Qué es el ACTIVO?', a:'Todo lo que la empresa TIENE: bienes y derechos (caja, bancos, clientes, mercancías, equipo).'},
+    {tipo:'flash', q:'¿Qué es el PASIVO?', a:'Todo lo que la empresa DEBE a terceros (proveedores, acreedores, documentos por pagar).'},
+    {tipo:'flash', q:'¿Qué es el CAPITAL contable?', a:'Lo que la empresa debe a sus dueños: aportaciones + utilidades. Capital = Activo − Pasivo.'},
+  ]},
+  {id:'ecuacion', nombre:'Ecuación y estados', desc:'Activo = Pasivo + Capital', icono:'🧮', color:'c-morado', cards:[
+    {tipo:'multi', q:'La ecuación contable básica es:', opciones:['Activo = Pasivo + Capital','Activo = Pasivo − Capital','Capital = Activo + Pasivo','Pasivo = Activo + Capital'], correcta:0, exp:'Lo que tienes (activo) se financia con deuda (pasivo) o con lo propio (capital).'},
+    {tipo:'multi', q:'Si Activo = 500 y Pasivo = 200, el Capital es:', opciones:['300','700','200','100'], correcta:0, exp:'Capital = Activo − Pasivo = 500 − 200 = 300.'},
+    {tipo:'multi', q:'El estado que muestra la situación a una fecha es el:', opciones:['Balance General (Estado de situación financiera)','Estado de Resultados','Flujo de efectivo','Estado de costos'], correcta:0, exp:'El Balance es una "foto" del Activo, Pasivo y Capital a una fecha.'},
+    {tipo:'multi', q:'El estado que muestra utilidad o pérdida es el:', opciones:['Estado de Resultados','Balance General','Balanza de comprobación','Libro diario'], correcta:0, exp:'Estado de Resultados = Ingresos − Costos − Gastos = Utilidad o Pérdida.'},
+    {tipo:'multi', q:'Ingresos 1000, Costos 400, Gastos 200. Utilidad =', opciones:['400','600','1600','200'], correcta:0, exp:'1000 − 400 − 200 = 400 de utilidad.'},
+    {tipo:'multi', q:'El registro cronológico de operaciones es el:', opciones:['Libro Diario','Libro Mayor','Balance','Estado de flujo'], correcta:0, exp:'En el Diario se asientan las operaciones día a día (partida doble).'},
+    {tipo:'multi', q:'Donde se concentra el movimiento por cuenta es el:', opciones:['Libro Mayor','Libro Diario','Balanza','Inventario'], correcta:0, exp:'El Mayor agrupa todos los cargos y abonos de cada cuenta.'},
+    {tipo:'flash', q:'Las 3 partes del Balance', a:'ACTIVO (lo que tengo) = PASIVO (lo que debo) + CAPITAL (lo de los dueños).'},
+    {tipo:'flash', q:'Fórmula de la utilidad', a:'Utilidad = Ingresos − Costos − Gastos (va en el Estado de Resultados).'},
+  ]},
+  {id:'contribuciones', nombre:'Contribuciones de las PyMEs', desc:'Fiscal · impuestos en México', icono:'🏛️', color:'c-naranja', cards:[
+    {tipo:'multi', q:'¿Qué significa ISR?', opciones:['Impuesto Sobre la Renta','Impuesto Sobre Recibos','Ingreso Sin Retención','Impuesto a Sociedades Reguladas'], correcta:0, exp:'El ISR grava las utilidades (la renta) de personas y empresas.'},
+    {tipo:'multi', q:'¿Qué grava el IVA?', opciones:['El consumo de bienes y servicios','Las utilidades','La nómina','La propiedad'], correcta:0, exp:'El IVA (Impuesto al Valor Agregado) grava el consumo; tasa general 16%.'},
+    {tipo:'multi', q:'La tasa GENERAL del IVA en México es:', opciones:['16%','10%','8%','30%'], correcta:0, exp:'16% general (existe 0% y 8% en región fronteriza para ciertos casos).'},
+    {tipo:'multi', q:'¿Qué es el RFC?', opciones:['Registro Federal de Contribuyentes','Recibo Fiscal Comercial','Régimen Fiscal Común','Reporte Financiero Contable'], correcta:0, exp:'Clave única que identifica a cada contribuyente ante el SAT.'},
+    {tipo:'multi', q:'RESICO es un régimen pensado para…', opciones:['Personas con ingresos bajos/medios, con tasas reducidas','Grandes corporativos','Extranjeros únicamente','Gobiernos'], correcta:0, exp:'Régimen Simplificado de Confianza: simplifica y reduce el ISR para PyMEs y personas físicas que cumplen requisitos.'},
+    {tipo:'multi', q:'El comprobante fiscal digital se llama:', opciones:['CFDI','PDF','SAT-1','Recibo simple'], correcta:0, exp:'CFDI: Comprobante Fiscal Digital por Internet (factura electrónica).'},
+    {tipo:'multi', q:'Una contribución es:', opciones:['Aportación obligatoria al gasto público','Un donativo voluntario','Una multa','Un préstamo del banco'], correcta:0, exp:'Las contribuciones (impuestos, aportaciones, derechos) financian el gasto público.'},
+    {tipo:'multi', q:'¿Cuál NO es una contribución según el Código Fiscal?', opciones:['La propina','Impuestos','Derechos','Aportaciones de seguridad social'], correcta:0, exp:'Las contribuciones se clasifican en impuestos, aportaciones de seguridad social, contribuciones de mejoras y derechos.'},
+    {tipo:'flash', q:'IVA trasladado vs acreditable', a:'TRASLADADO: el que cobras al vender. ACREDITABLE: el que pagas al comprar. Pagas al SAT la diferencia.'},
+    {tipo:'flash', q:'Persona física vs persona moral', a:'FÍSICA: un individuo. MORAL: una sociedad/empresa (varias personas con un fin común).'},
+  ]},
+  {id:'alto-valor', nombre:'Empresas de alto valor', desc:'Creación de empresas', icono:'🚀', color:'c-amarillo', cards:[
+    {tipo:'multi', q:'La PROPUESTA DE VALOR responde a:', opciones:['¿Por qué el cliente te elige a ti?','¿Cuánto cuesta producir?','¿Quién es el dueño?','¿Dónde está la oficina?'], correcta:0, exp:'Es la promesa de valor que resuelve un problema mejor que la competencia.'},
+    {tipo:'multi', q:'Una empresa "escalable" es la que:', opciones:['Crece en ingresos sin que los costos crezcan igual','Tiene muchos empleados','Vende solo local','Nunca cambia'], correcta:0, exp:'Escalar = aumentar ventas mucho más rápido que los costos.'},
+    {tipo:'multi', q:'El Business Model Canvas sirve para:', opciones:['Visualizar el modelo de negocio en un lienzo','Hacer la contabilidad','Pagar impuestos','Contratar personal'], correcta:0, exp:'Resume en 9 bloques cómo la empresa crea, entrega y captura valor.'},
+    {tipo:'multi', q:'Un MVP es:', opciones:['Producto mínimo viable para validar la idea','El mejor producto del mercado','Un plan financiero','Una marca registrada'], correcta:0, exp:'MVP: versión más simple que permite probar la idea con clientes reales.'},
+    {tipo:'multi', q:'El "valor" de una empresa de alto valor viene sobre todo de:', opciones:['Su capacidad de generar flujos futuros y crecer','El tamaño de su oficina','La antigüedad','El número de socios'], correcta:0, exp:'Se valúa por su potencial de generar utilidades y crecer (escalabilidad, diferenciación).'},
+    {tipo:'multi', q:'El "segmento de clientes" en el Canvas es:', opciones:['Para quién creas valor','Tus proveedores','Tus impuestos','Tu logo'], correcta:0, exp:'Define a qué grupos de clientes sirves.'},
+    {tipo:'flash', q:'9 bloques del Canvas (resumen)', a:'Segmentos · Propuesta de valor · Canales · Relación con clientes · Ingresos · Recursos clave · Actividades clave · Socios clave · Costos.'},
+    {tipo:'flash', q:'¿Qué hace valiosa a una empresa?', a:'Resuelve un problema real, se diferencia, es escalable y genera flujos sostenibles.'},
+  ]},
+];
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+const KEY='contaquest_v2';
+const estadoBase={nombre:'',xp:0,gemas:0,racha:0,ultimoDia:'',aciertos:0,lecciones:0,progresoMazo:{},cursos:[],misMazos:[],profes:[],seed:false};
+let S=cargar();
+
+function cargar(){
+  try{
+    let r=JSON.parse(localStorage.getItem(KEY));
+    if(!r){ // migración desde v1
+      const v1=JSON.parse(localStorage.getItem('contaquest_v1'));
+      if(v1) r=v1;
+    }
+    if(r) return Object.assign({},estadoBase,r);
+  }catch(e){}
+  return JSON.parse(JSON.stringify(estadoBase));
+}
+function guardar(){localStorage.setItem(KEY,JSON.stringify(S));}
+
+// preseed de cursos
+if(!S.seed){
+  if(!S.cursos.length){
+    S.cursos=[
+      {id:'c1',nombre:'Creación de empresas de alto valor',icono:'🚀',color:'c-amarillo'},
+      {id:'c2',nombre:'Contribuciones de las PyMEs',icono:'🏛️',color:'c-naranja'},
+    ];
+  }
+  S.seed=true; guardar();
+}
+
+/* racha */
+function hoyStr(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function checarRacha(){
+  const h=hoyStr(); if(S.ultimoDia===h)return;
+  const ay=new Date();ay.setDate(ay.getDate()-1);
+  const ayStr=ay.getFullYear()+'-'+(ay.getMonth()+1)+'-'+ay.getDate();
+  if(S.ultimoDia===ayStr)S.racha+=1; else S.racha=1;
+  S.ultimoDia=h; guardar();
+}
+
+/* niveles */
+const NIVELES=[{min:0,nombre:'Aprendiz'},{min:100,nombre:'Auxiliar contable'},{min:250,nombre:'Contador junior'},{min:500,nombre:'Analista financiero'},{min:850,nombre:'Contralor'},{min:1300,nombre:'Director de finanzas'},{min:2000,nombre:'CFO maestro'}];
+function nivelActual(){
+  let lv=0; for(let i=0;i<NIVELES.length;i++)if(S.xp>=NIVELES[i].min)lv=i;
+  const a=NIVELES[lv],sig=NIVELES[lv+1];
+  const base=a.min,techo=sig?sig.min:a.min+1;
+  const pct=sig?Math.round((S.xp-base)/(techo-base)*100):100;
+  return {num:lv+1,nombre:a.nombre,techo,pct,hayMas:!!sig};
+}
+
+/* utilidades */
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function cursoById(id){return S.cursos.find(c=>c.id===id);}
+const COLORES=['c-azul','c-naranja','c-morado','c-amarillo','c-verde','c-rojo'];
+
+/* ============================================================
+   TOPBAR + HOME
+   ============================================================ */
+function pintarTop(){
+  document.getElementById('st-racha').textContent=S.racha;
+  document.getElementById('st-gemas').textContent=S.gemas;
+  document.getElementById('st-xp').textContent=S.xp;
+}
+function pintarHome(){
+  const nom=S.nombre?S.nombre.split(' ')[0]:'';
+  document.getElementById('saludo').textContent=nom?`¡Hola, ${nom}! 👋`:'¡Hola! 👋';
+  const nv=nivelActual();
+  document.getElementById('nivel-nombre').textContent=`Nivel ${nv.num} · ${nv.nombre}`;
+  document.getElementById('nivel-xp').textContent=nv.hayMas?`${S.xp} / ${nv.techo} XP`:`${S.xp} XP · ¡Máximo!`;
+  document.getElementById('nivel-barra').style.width=nv.pct+'%';
+
+  pintarRecordatorios();
+
+  // biblioteca general
+  const cont=document.getElementById('lista-mazos'); cont.innerHTML='';
+  MAZOS.forEach(m=>cont.appendChild(tarjetaMazo(m,false)));
+
+  // mazos por curso
+  const hc=document.getElementById('home-cursos'); hc.innerHTML='';
+  S.cursos.forEach(curso=>{
+    const decks=S.misMazos.filter(m=>m.cursoId===curso.id);
+    if(!decks.length)return;
+    const tit=document.createElement('div'); tit.className='seccion-tit';
+    tit.innerHTML=`${curso.icono} ${escapeHtml(curso.nombre)}`;
+    hc.appendChild(tit);
+    const wrap=document.createElement('div'); wrap.className='mazos';
+    decks.forEach(m=>wrap.appendChild(tarjetaMazo(m,true)));
+    hc.appendChild(wrap);
+  });
+  // sin curso
+  const sueltos=S.misMazos.filter(m=>!m.cursoId||!cursoById(m.cursoId));
+  if(sueltos.length){
+    const tit=document.createElement('div'); tit.className='seccion-tit'; tit.textContent='🗂️ Sin curso';
+    hc.appendChild(tit);
+    const wrap=document.createElement('div'); wrap.className='mazos';
+    sueltos.forEach(m=>wrap.appendChild(tarjetaMazo(m,true)));
+    hc.appendChild(wrap);
+  }
+}
+function tarjetaMazo(m,propio){
+  const prog=S.progresoMazo[m.id]||0, total=m.cards.length;
+  const pct=Math.min(100,Math.round(prog/total*100));
+  const b=document.createElement('button'); b.className='mazo'; b.onclick=()=>iniciarLeccion(m.id,propio);
+  b.innerHTML=`<div class="emoji ${m.color||'c-azul'}">${m.icono||'📘'}</div>
+    <div class="txt"><b>${escapeHtml(m.nombre)}</b><small>${escapeHtml(m.desc||(total+' tarjetas'))} · ${total} 🃏</small>
+    <div class="mini-barra"><i style="width:${pct}%"></i></div></div><div class="flecha">›</div>`;
+  return b;
+}
+
+/* recordatorios de profes en el home */
+function pintarRecordatorios(){
+  const cont=document.getElementById('recordatorios'); cont.innerHTML='';
+  if(!S.profes.length)return;
+  const tit=document.createElement('div'); tit.className='seccion-tit'; tit.innerHTML='👔 Recuerda con tus profes';
+  cont.appendChild(tit);
+  const wrap=document.createElement('div'); wrap.className='mazos';
+  S.profes.forEach(p=>{
+    const curso=cursoById(p.cursoId);
+    const recs=recomendaciones(p);
+    const linea=recs[0]||'Toca para ver recomendaciones';
+    const nivel=p.exigencia==='Cero tolerancia'?'alto':p.exigencia==='Estricto'?'medio':'bajo';
+    const card=document.createElement('button'); card.className='reco-card'; card.onclick=()=>verProfe(p.id);
+    card.innerHTML=`<div class="av ${curso?curso.color:'c-gris'}">${curso?curso.icono:'👤'}</div>
+      <div class="info"><b>${escapeHtml(p.nombre)}</b><small>${escapeHtml(linea)}</small>
+      ${p.exigencia?`<span class="badge ${nivel}">${escapeHtml(p.exigencia)}</span>`:''}</div><div class="flecha">›</div>`;
+    wrap.appendChild(card);
+  });
+  cont.appendChild(wrap);
+}
+
+/* ============================================================
+   NAVEGACIÓN
+   ============================================================ */
+function ir(p){
+  document.querySelectorAll('.pantalla').forEach(x=>x.classList.remove('activa'));
+  document.getElementById('p-'+p).classList.add('activa');
+  let navKey=p; if(p==='profe-det')navKey='profes';
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===navKey));
+  document.getElementById('nav').style.display='flex';
+  document.getElementById('topbar').style.display='flex';
+  window.scrollTo(0,0);
+  if(p==='home')pintarHome();
+  if(p==='crear'){pintarCursos();pintarSelectCursos();pintarMisMazos();}
+  if(p==='profes'){pintarSelectCursos();pintarProfes();}
+  if(p==='perfil')pintarPerfil();
+}
+
+/* ============================================================
+   LECCIÓN (motor de quiz + flashcards + Leitner)
+   ============================================================ */
+let L=null;
+function getMazo(id,propio){return (propio?S.misMazos:MAZOS).find(m=>m.id===id)||MAZOS.find(m=>m.id===id)||S.misMazos.find(m=>m.id===id);}
+function iniciarLeccion(id,propio){
+  const m=getMazo(id,propio);
+  if(!m||!m.cards.length){toast('Ese mazo no tiene tarjetas');return;}
+  L={mazo:m,propio,cola:m.cards.map((c,i)=>({c,i})),idx:0,vidas:3,aciertos:0,fallos:0,total:m.cards.length,xpGan:0,contestada:false,sel:null};
+  document.querySelectorAll('.pantalla').forEach(x=>x.classList.remove('activa'));
+  document.getElementById('p-leccion').classList.add('activa');
+  document.getElementById('nav').style.display='none';
+  document.getElementById('topbar').style.display='none';
+  pintarTarjeta();
+}
+function pintarTarjeta(){
+  const item=L.cola[L.idx]; L.contestada=false;
+  document.getElementById('lec-prog').style.width=Math.round(L.idx/L.cola.length*100)+'%';
+  document.getElementById('lec-vidas').textContent='❤️ '+L.vidas;
+  const cuerpo=document.getElementById('lec-cuerpo');
+  if(!item)return finLeccion();
+  const c=item.c;
+  if(c.tipo==='flash'){
+    cuerpo.innerHTML=`<div class="tag-tipo">Ficha de estudio · toca para voltear</div>
+      <div class="flash" id="flash" onclick="voltear()"><div class="flash-inner">
+        <div class="flash-cara"><div class="mini">Pregunta</div><div class="grande">${escapeHtml(c.q)}</div><div class="pista">👆 Toca para ver la respuesta</div></div>
+        <div class="flash-cara atras"><div class="mini">Respuesta</div><div class="grande">${escapeHtml(c.a)}</div></div>
+      </div></div>
+      <div id="flash-btns" style="display:none">
+        <button class="btn" onclick="responderFlash(true)">😎 Ya me la sabía</button><div style="height:10px"></div>
+        <button class="btn ghost" onclick="responderFlash(false)">🤔 Repasar de nuevo</button></div>
+      <div id="flash-hint" class="btn ghost" style="pointer-events:none">Voltea la tarjeta para continuar</div>`;
+  }else{
+    const ops=c.opciones.map((o,i)=>`<button class="opcion" data-i="${i}" onclick="elegir(${i})">${escapeHtml(o)}</button>`).join('');
+    cuerpo.innerHTML=`<div class="tag-tipo">Elige la respuesta correcta</div><div class="pregunta">${escapeHtml(c.q)}</div>
+      <div class="opciones" id="ops">${ops}</div><div style="height:90px"></div>
+      <div class="barra-accion"><button class="btn" id="btn-comprobar" disabled onclick="comprobar()">Comprobar</button></div>`;
+    L.sel=null;
+  }
+  window.scrollTo(0,0);
+}
+function voltear(){document.getElementById('flash').classList.add('volteada');document.getElementById('flash-hint').style.display='none';document.getElementById('flash-btns').style.display='block';}
+function responderFlash(s){registrar(s,null);avanzar(s);}
+function elegir(i){if(L.contestada)return;L.sel=i;document.querySelectorAll('#ops .opcion').forEach(b=>b.classList.toggle('sel',+b.dataset.i===i));document.getElementById('btn-comprobar').disabled=false;}
+function comprobar(){
+  if(L.sel==null||L.contestada)return;
+  const c=L.cola[L.idx].c, bien=L.sel===c.correcta; L.contestada=true;
+  document.querySelectorAll('#ops .opcion').forEach(b=>{b.disabled=true;const i=+b.dataset.i;if(i===c.correcta)b.classList.add('bien');else if(i===L.sel)b.classList.add('mal');});
+  registrar(bien,c); mostrarFeedback(bien,c,()=>avanzar(bien));
+}
+function registrar(bien,c){
+  if(bien){L.aciertos++;S.aciertos++;L.xpGan+=10;}
+  else{L.fallos++;L.vidas--;const item=L.cola[L.idx];L.cola.splice(Math.min(L.cola.length,L.idx+3),0,{c:item.c,i:item.i,repaso:true});}
+}
+function mostrarFeedback(bien,c,cb){
+  const fb=document.createElement('div'); fb.className='feedback '+(bien?'ok':'err');
+  const correcta=c&&c.opciones?c.opciones[c.correcta]:'';
+  fb.innerHTML=`<div class="fb-tit">${bien?'✅ ¡Correcto!':'❌ Incorrecto'}</div>
+    ${(!bien&&correcta)?`<div class="fb-exp"><b>Respuesta:</b> ${escapeHtml(correcta)}</div>`:''}
+    ${c&&c.exp?`<div class="fb-exp">${escapeHtml(c.exp)}</div>`:''}
+    <button class="btn ${bien?'':'rojo'}">Continuar</button>`;
+  document.body.appendChild(fb); requestAnimationFrame(()=>fb.classList.add('show'));
+  if(bien)ding();else buzz();
+  fb.querySelector('button').onclick=()=>{fb.classList.remove('show');setTimeout(()=>fb.remove(),300);cb();};
+}
+function avanzar(){if(L.vidas<=0)return finLeccion(true);L.idx++;if(L.idx>=L.cola.length)return finLeccion();pintarTarjeta();}
+function finLeccion(sinVidas){
+  const completo=!sinVidas;
+  if(completo){S.lecciones++;S.progresoMazo[L.mazo.id]=L.total;S.gemas+=5;L.xpGan+=20;}
+  S.xp+=L.xpGan; checarRacha(); guardar(); pintarTop();
+  const cuerpo=document.getElementById('lec-cuerpo');
+  document.getElementById('lec-prog').style.width='100%';
+  const prec=(L.aciertos+L.fallos)>0?Math.round(L.aciertos/(L.aciertos+L.fallos)*100):100;
+  cuerpo.innerHTML=`<div class="fin"><div class="trofeo">${completo?'🏆':'💪'}</div>
+    <h2>${completo?'¡Lección completada!':'¡Casi! Sigue practicando'}</h2>
+    <p style="color:var(--gris);font-weight:700">${completo?'Sumaste XP y una racha. ¡Vas excelente!':'Te quedaste sin corazones, pero ya aprendiste varias. Inténtalo otra vez.'}</p>
+    <div class="resumen"><div class="rcard"><div class="in"><small>XP ganada</small><b style="color:var(--amarillo)">+${L.xpGan}</b></div></div>
+    <div class="rcard azul"><div class="in"><small>Precisión</small><b style="color:var(--azul)">${prec}%</b></div></div></div>
+    <button class="btn" onclick="ir('home')">Continuar</button><div style="height:10px"></div>
+    <button class="btn ghost" onclick="iniciarLeccion('${L.mazo.id}',${L.propio})">Repetir mazo</button></div>`;
+  if(completo)party(); window.scrollTo(0,0);
+}
+function salirLeccion(){if(confirm('¿Salir de la lección? Perderás el avance de esta sesión.'))ir('home');}
+
+/* ============================================================
+   CURSOS (gestión)
+   ============================================================ */
+function pintarCursos(){
+  const cont=document.getElementById('lista-cursos'); cont.innerHTML='';
+  if(!S.cursos.length){cont.innerHTML='<div class="vacio" style="padding:14px">Sin cursos. Agrega uno 👇</div>';return;}
+  S.cursos.forEach(c=>{
+    const n=S.misMazos.filter(m=>m.cursoId===c.id).length;
+    const row=document.createElement('div'); row.className='fila-curso';
+    row.innerHTML=`<span class="ce">${c.icono}</span><span class="cn">${escapeHtml(c.nombre)} <small style="color:var(--gris)">· ${n} mazo${n!==1?'s':''}</small></span>
+      <button onclick="renombrarCurso('${c.id}')">✏️</button><button onclick="borrarCurso('${c.id}')">🗑️</button>`;
+    cont.appendChild(row);
+  });
+}
+function agregarCurso(){
+  const nombre=prompt('Nombre del curso:'); if(!nombre||!nombre.trim())return;
+  const icono=prompt('Un emoji para el curso (ej. 📘, 💰, 🚀):','📘')||'📘';
+  S.cursos.push({id:'cur-'+Date.now(),nombre:nombre.trim(),icono:icono.trim()||'📘',color:COLORES[S.cursos.length%COLORES.length]});
+  guardar(); pintarCursos(); pintarSelectCursos(); toast('Curso agregado');
+}
+function renombrarCurso(id){
+  const c=cursoById(id); if(!c)return;
+  const nombre=prompt('Nuevo nombre del curso:',c.nombre); if(nombre&&nombre.trim())c.nombre=nombre.trim();
+  const icono=prompt('Emoji del curso:',c.icono); if(icono&&icono.trim())c.icono=icono.trim();
+  guardar(); pintarCursos(); pintarSelectCursos(); toast('Curso actualizado');
+}
+function borrarCurso(id){
+  if(!confirm('¿Borrar este curso? Sus mazos quedarán como "Sin curso".'))return;
+  S.cursos=S.cursos.filter(c=>c.id!==id);
+  S.misMazos.forEach(m=>{if(m.cursoId===id)m.cursoId=null;});
+  S.profes.forEach(p=>{if(p.cursoId===id)p.cursoId=null;});
+  guardar(); pintarCursos(); pintarSelectCursos(); pintarMisMazos(); toast('Curso borrado');
+}
+function pintarSelectCursos(){
+  ['nm-curso','pr-curso'].forEach(selId=>{
+    const sel=document.getElementById(selId); if(!sel)return;
+    const prev=sel.value;
+    sel.innerHTML='<option value="">— Sin curso —</option>'+S.cursos.map(c=>`<option value="${c.id}">${c.icono} ${escapeHtml(c.nombre)}</option>`).join('');
+    if(prev)sel.value=prev;
+  });
+}
+
+/* ============================================================
+   CREAR / EDITAR MAZO
+   ============================================================ */
+let iconoSel='📒', editMazoId=null;
+const ICONOS=['📒','📊','💰','🧾','⚖️','🏦','📈','🪙','🧮','💼','📌','🔑'];
+function pintarIconos(){
+  const c=document.getElementById('nm-iconos'); c.innerHTML='';
+  ICONOS.forEach(ic=>{const ch=document.createElement('button');ch.className='chip'+(ic===iconoSel?' on':'');ch.textContent=ic;ch.onclick=()=>{iconoSel=ic;pintarIconos();};c.appendChild(ch);});
+}
+function guardarMazo(){
+  const nombre=document.getElementById('nm-nombre').value.trim();
+  const cursoId=document.getElementById('nm-curso').value;
+  const txt=document.getElementById('nm-pegado').value;
+  if(!nombre){toast('Ponle un nombre al mazo');return;}
+  const cards=parsearApuntes(txt);
+  if(!cards.length){toast('Escribe al menos una tarjeta con ::');return;}
+  if(editMazoId){
+    const m=S.misMazos.find(x=>x.id===editMazoId);
+    if(m){m.nombre=nombre;m.cursoId=cursoId;m.icono=iconoSel;m.cards=cards;}
+    toast('✅ Mazo actualizado'); cancelarEdicion();
+  }else{
+    S.misMazos.unshift({id:'mio-'+Date.now(),nombre,desc:'Mazo de clase',icono:iconoSel,color:'c-rojo',cursoId,cards});
+    toast('🎉 Mazo creado con '+cards.length+' tarjetas');
+  }
+  guardar();
+  document.getElementById('nm-nombre').value=''; document.getElementById('nm-pegado').value='';
+  document.getElementById('nm-curso').value=''; iconoSel='📒'; pintarIconos(); pintarMisMazos(); pintarCursos();
+}
+function parsearApuntes(txt){
+  const out=[];
+  txt.split('\n').forEach(l=>{
+    l=l.trim(); if(!l)return;
+    let sep=null;
+    if(l.includes('::'))sep='::'; else if(l.includes(' = '))sep=' = '; else if(l.includes(' - '))sep=' - '; else if(l.includes('='))sep='=';
+    if(!sep)return;
+    const p=l.split(sep), q=p.shift().trim(), a=p.join(sep).trim();
+    if(q&&a)out.push({tipo:'flash',q,a});
+  });
+  return out;
+}
+function editarMazo(id){
+  const m=S.misMazos.find(x=>x.id===id); if(!m)return;
+  editMazoId=id;
+  document.getElementById('nm-nombre').value=m.nombre;
+  document.getElementById('nm-curso').value=m.cursoId||'';
+  iconoSel=m.icono||'📒'; pintarIconos();
+  document.getElementById('nm-pegado').value=m.cards.map(c=>`${c.q} :: ${c.tipo==='flash'?c.a:(c.opciones?c.opciones[c.correcta]:'')}`).join('\n');
+  document.getElementById('form-mazo-tit').textContent='Editar mazo';
+  document.getElementById('btn-crear').textContent='Guardar cambios';
+  document.getElementById('banner-edit').innerHTML=`<div class="banner-edit">✏️ Editando: ${escapeHtml(m.nombre)}<button onclick="cancelarEdicion()">✕</button></div>`;
+  ir('crear'); document.getElementById('form-mazo').scrollIntoView({behavior:'smooth'});
+}
+function cancelarEdicion(){
+  editMazoId=null;
+  document.getElementById('nm-nombre').value=''; document.getElementById('nm-pegado').value=''; document.getElementById('nm-curso').value='';
+  iconoSel='📒'; pintarIconos();
+  document.getElementById('form-mazo-tit').textContent='Nuevo mazo (clase)';
+  document.getElementById('btn-crear').textContent='Crear mazo de estudio';
+  document.getElementById('banner-edit').innerHTML='';
+}
+function borrarMazo(id){
+  if(!confirm('¿Borrar este mazo?'))return;
+  S.misMazos=S.misMazos.filter(m=>m.id!==id); delete S.progresoMazo[id];
+  guardar(); pintarMisMazos(); pintarCursos(); toast('Mazo borrado');
+}
+function pintarMisMazos(){
+  const cont=document.getElementById('mis-mazos-cont'); cont.innerHTML='';
+  if(!S.misMazos.length){
+    cont.innerHTML='<div class="seccion-tit">Mis mazos creados</div><div class="vacio"><div class="big">🗒️</div>Aún no creas mazos.<br>Crea uno con los apuntes de tu clase 👆</div>';
+    return;
+  }
+  const grupos=[...S.cursos.map(c=>({curso:c,decks:S.misMazos.filter(m=>m.cursoId===c.id)})),{curso:null,decks:S.misMazos.filter(m=>!m.cursoId||!cursoById(m.cursoId))}];
+  grupos.forEach(g=>{
+    if(!g.decks.length)return;
+    const tit=document.createElement('div'); tit.className='seccion-tit';
+    tit.innerHTML=g.curso?`${g.curso.icono} ${escapeHtml(g.curso.nombre)}`:'🗂️ Sin curso';
+    cont.appendChild(tit);
+    const wrap=document.createElement('div'); wrap.className='mazos';
+    g.decks.forEach(m=>{
+      const total=m.cards.length;
+      const row=document.createElement('div'); row.className='mazo';
+      row.innerHTML=`<div class="emoji ${m.color||'c-rojo'}">${m.icono||'📒'}</div>
+        <div class="txt"><b>${escapeHtml(m.nombre)}</b><small>${total} tarjeta${total!==1?'s':''}</small></div>
+        <div class="acciones"><button title="Estudiar" onclick="iniciarLeccion('${m.id}',true)">▶️</button>
+        <button title="Editar" onclick="editarMazo('${m.id}')">✏️</button>
+        <button title="Borrar" onclick="borrarMazo('${m.id}')">🗑️</button></div>`;
+      wrap.appendChild(row);
+    });
+    cont.appendChild(wrap);
+  });
+}
+
+/* ============================================================
+   PROFES + COACH
+   ============================================================ */
+const EXIGENCIA=['Relajado','Normal','Estricto','Cero tolerancia'];
+const VESTIMENTA=['Casual','Formal','Muy formal / traje'];
+const VALORA=['Puntualidad','Participación','Saber la teoría','Respeto','Tareas a tiempo','Buena presentación'];
+const MOLESTA=['Llegar tarde','No saber el tema','Usar el celular','Ropa inadecuada','Interrumpir','Excusas'];
+let prExig='', prVest='', prValora=[], prMolesta=[], editProfeId=null;
+
+function chipSingle(contId,lista,getSel,setSel){
+  const c=document.getElementById(contId); c.innerHTML='';
+  lista.forEach(x=>{const ch=document.createElement('button');ch.className='chip'+(getSel()===x?' on':'');ch.textContent=x;ch.onclick=()=>{setSel(x);chipSingle(contId,lista,getSel,setSel);};c.appendChild(ch);});
+}
+function chipMulti(contId,lista,arr){
+  const c=document.getElementById(contId); c.innerHTML='';
+  lista.forEach(x=>{const on=arr.includes(x);const ch=document.createElement('button');ch.className='chip'+(on?' on':'');ch.textContent=x;ch.onclick=()=>{const i=arr.indexOf(x);if(i>=0)arr.splice(i,1);else arr.push(x);chipMulti(contId,lista,arr);};c.appendChild(ch);});
+}
+function pintarChipsProfe(){
+  chipSingle('pr-exig',EXIGENCIA,()=>prExig,v=>prExig=v);
+  chipSingle('pr-vest',VESTIMENTA,()=>prVest,v=>prVest=v);
+  chipMulti('pr-valora',VALORA,prValora);
+  chipMulti('pr-molesta',MOLESTA,prMolesta);
+}
+function guardarProfe(){
+  const nombre=document.getElementById('pr-nombre').value.trim();
+  if(!nombre){toast('Ponle el nombre del profe');return;}
+  const datos={nombre,cursoId:document.getElementById('pr-curso').value,exigencia:prExig,vestimenta:prVest,valora:[...prValora],molesta:[...prMolesta],notas:document.getElementById('pr-notas').value.trim()};
+  if(editProfeId){const p=S.profes.find(x=>x.id===editProfeId);if(p)Object.assign(p,datos);toast('✅ Profe actualizado');}
+  else{datos.id='prof-'+Date.now();S.profes.unshift(datos);toast('👔 Profe guardado');}
+  guardar(); resetFormProfe(); pintarProfes();
+}
+function resetFormProfe(){
+  editProfeId=null; prExig='';prVest='';prValora=[];prMolesta=[];
+  document.getElementById('pr-nombre').value=''; document.getElementById('pr-curso').value=''; document.getElementById('pr-notas').value='';
+  document.getElementById('form-profe-tit').textContent='Nuevo profesor';
+  document.getElementById('btn-profe').textContent='Guardar profesor';
+  document.getElementById('banner-profe').innerHTML='';
+  pintarChipsProfe();
+}
+function editarProfe(id){
+  const p=S.profes.find(x=>x.id===id); if(!p)return;
+  editProfeId=id;
+  document.getElementById('pr-nombre').value=p.nombre;
+  pintarSelectCursos(); document.getElementById('pr-curso').value=p.cursoId||'';
+  prExig=p.exigencia||''; prVest=p.vestimenta||''; prValora=[...(p.valora||[])]; prMolesta=[...(p.molesta||[])];
+  document.getElementById('pr-notas').value=p.notas||'';
+  pintarChipsProfe();
+  document.getElementById('form-profe-tit').textContent='Editar profesor';
+  document.getElementById('btn-profe').textContent='Guardar cambios';
+  document.getElementById('banner-profe').innerHTML=`<div class="banner-edit">✏️ Editando: ${escapeHtml(p.nombre)}<button onclick="resetFormProfe()">✕</button></div>`;
+  ir('profes'); document.getElementById('form-profe').scrollIntoView({behavior:'smooth'});
+}
+function borrarProfe(id){
+  if(!confirm('¿Borrar este profe?'))return;
+  S.profes=S.profes.filter(p=>p.id!==id); guardar(); pintarProfes(); toast('Profe borrado');
+}
+function pintarProfes(){
+  const cont=document.getElementById('lista-profes'); cont.innerHTML='';
+  if(!S.profes.length){cont.innerHTML='<div class="vacio"><div class="big">👔</div>Aún no registras profes.<br>Agrega uno arriba para recibir consejos 👆</div>';return;}
+  S.profes.forEach(p=>{
+    const curso=cursoById(p.cursoId);
+    const nivel=p.exigencia==='Cero tolerancia'?'alto':p.exigencia==='Estricto'?'medio':'bajo';
+    const card=document.createElement('button'); card.className='reco-card'; card.onclick=()=>verProfe(p.id);
+    card.innerHTML=`<div class="av ${curso?curso.color:'c-gris'}">${curso?curso.icono:'👤'}</div>
+      <div class="info"><b>${escapeHtml(p.nombre)}</b><small>${curso?escapeHtml(curso.nombre):'Sin curso'}</small>
+      ${p.exigencia?`<span class="badge ${nivel}">${escapeHtml(p.exigencia)}</span>`:''}</div><div class="flecha">›</div>`;
+    cont.appendChild(card);
+  });
+}
+function recomendaciones(p){
+  const r=[];
+  if(p.vestimenta==='Muy formal / traje')r.push('👔 Ve de traje o muy formal: camisa fajada, zapatos limpios, cabello peinado y bien arreglado.');
+  else if(p.vestimenta==='Formal')r.push('👔 Vístete formal y arreglado. Evita ropa deportiva, gorra o ropa rota.');
+  else if(p.vestimenta==='Casual')r.push('👕 Casual está bien, pero limpio y presentable.');
+  if(p.exigencia==='Cero tolerancia')r.push('🚨 Cero tolerancia: NO improvises. Repasa el tema antes de entrar y ten respuestas firmes; puede exhibir a quien no sabe.');
+  else if(p.exigencia==='Estricto')r.push('⚠️ Es estricto: prepárate bien y cuida tus formas. Mejor sobrar que faltar.');
+  const mapV={'Puntualidad':'⏰ Llega 5-10 minutos antes; valora la puntualidad.','Participación':'🙋 Participa al menos una vez; le gusta ver interés.','Saber la teoría':'📖 Domina los conceptos clave; puede preguntar de sorpresa.','Respeto':'🤝 Trátalo de usted y con respeto; cuida el tono.','Tareas a tiempo':'✅ Entrega TODO a tiempo, sin excusas.','Buena presentación':'✨ Cuida tu presentación personal y la de tus trabajos.'};
+  (p.valora||[]).forEach(x=>{if(mapV[x])r.push(mapV[x]);});
+  const mapM={'Llegar tarde':'⛔ Nunca llegues tarde; le molesta.','No saber el tema':'⛔ No entres sin repasar; le molesta que no sepan.','Usar el celular':'📵 Guarda el celular durante su clase.','Ropa inadecuada':'⛔ Evita ropa inadecuada (gorra, shorts, sandalias).','Interrumpir':'🤐 No lo interrumpas; espera tu turno.','Excusas':'🚫 Nada de excusas; ofrece soluciones.'};
+  (p.molesta||[]).forEach(x=>{if(mapM[x])r.push(mapM[x]);});
+  if(p.notas&&p.notas.trim())r.push('📝 Recuerda: '+p.notas.trim());
+  if(!r.length)r.push('Agrega más datos del profe (exigencia, vestimenta, notas) para darte recomendaciones.');
+  return r;
+}
+function verProfe(id){
+  const p=S.profes.find(x=>x.id===id); if(!p)return;
+  const curso=cursoById(p.cursoId);
+  const recs=recomendaciones(p);
+  const cuerpo=document.getElementById('profe-det-cuerpo');
+  cuerpo.innerHTML=`
+    <div class="form-card" style="margin:14px 0;text-align:center">
+      <div class="av ${curso?curso.color:'c-gris'}" style="width:64px;height:64px;font-size:2rem;margin:0 auto 10px">${curso?curso.icono:'👤'}</div>
+      <h3>${escapeHtml(p.nombre)}</h3>
+      <p class="sub">${curso?escapeHtml(curso.nombre):'Sin curso'}</p>
+    </div>
+    <div class="form-card" style="margin:14px 0">
+      <h3>🎯 Recomendaciones de tu coach</h3>
+      <div class="reco-lista" style="margin-top:10px">${recs.map(t=>`<div class="reco-item">${escapeHtml(t)}</div>`).join('')}</div>
+    </div>
+    <div class="form-card" style="margin:14px 0">
+      <h3>📋 Datos registrados</h3>
+      <div class="dato"><span>Exigencia</span><b>${escapeHtml(p.exigencia||'—')}</b></div>
+      <div class="dato"><span>Vestimenta</span><b>${escapeHtml(p.vestimenta||'—')}</b></div>
+      <div class="dato"><span>Valora</span><b>${p.valora&&p.valora.length?escapeHtml(p.valora.join(', ')):'—'}</b></div>
+      <div class="dato"><span>Le molesta</span><b>${p.molesta&&p.molesta.length?escapeHtml(p.molesta.join(', ')):'—'}</b></div>
+    </div>
+    <div style="padding:0 18px">
+      <button class="btn azul" onclick="editarProfe('${p.id}')">✏️ Editar profe</button><div style="height:10px"></div>
+      <button class="btn ghost" onclick="borrarProfe('${p.id}');ir('profes')">🗑️ Borrar profe</button>
+    </div>`;
+  ir('profe-det');
+}
+
+/* ============================================================
+   PERFIL
+   ============================================================ */
+function pintarPerfil(){
+  const nv=nivelActual();
+  document.getElementById('pf-nivel').textContent=`Nivel ${nv.num} · ${nv.nombre}`;
+  const frases=['Apenas empiezas. ¡A darle!','Vas tomando ritmo 💪','¡Buen avance!','Ya dominas lo básico 🔥','Nivel pro de finanzas 🤓','Casi un experto contable','¡Maestro del balance! 🏆'];
+  document.getElementById('pf-frase').textContent=frases[Math.min(nv.num-1,frases.length-1)];
+  document.getElementById('pf-racha').textContent=S.racha+(S.racha===1?' día':' días');
+  document.getElementById('pf-xp').textContent=S.xp+' XP';
+  document.getElementById('pf-aciertos').textContent=S.aciertos;
+  document.getElementById('pf-lecciones').textContent=S.lecciones;
+  document.getElementById('pf-nombre').value=S.nombre;
+}
+function guardarNombre(v){S.nombre=v.trim();guardar();toast('Nombre guardado');}
+function reiniciarTodo(){
+  if(!confirm('Esto borra TODO: progreso, mazos, cursos y profes. ¿Continuar?'))return;
+  S=JSON.parse(JSON.stringify(estadoBase));
+  S.cursos=[{id:'c1',nombre:'Creación de empresas de alto valor',icono:'🚀',color:'c-amarillo'},{id:'c2',nombre:'Contribuciones de las PyMEs',icono:'🏛️',color:'c-naranja'}];
+  S.seed=true; guardar(); pintarTop(); pintarPerfil(); ir('home'); toast('Todo reiniciado');
+}
+
+/* ============================================================
+   TOAST / SONIDOS / CONFETI
+   ============================================================ */
+let toastT;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+let actx;
+function tono(f,d,t){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.type=t||'sine';o.frequency.value=f;o.connect(g);g.connect(actx.destination);g.gain.setValueAtTime(.18,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+d);o.start();o.stop(actx.currentTime+d);}catch(e){}}
+function ding(){tono(660,.12);setTimeout(()=>tono(880,.18),90);}
+function buzz(){tono(180,.25,'square');}
+function party(){
+  const cv=document.createElement('canvas');cv.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:300';cv.width=innerWidth;cv.height=innerHeight;document.body.appendChild(cv);
+  const ctx=cv.getContext('2d'),cols=['#58cc02','#1cb0f6','#ffc800','#ff4b4b','#ce82ff','#ff9600'],P=[];
+  for(let i=0;i<120;i++)P.push({x:Math.random()*cv.width,y:-20-Math.random()*cv.height,r:5+Math.random()*7,c:cols[i%cols.length],vy:2+Math.random()*4,vx:-2+Math.random()*4,a:Math.random()*6.28});
+  let f=0;(function loop(){ctx.clearRect(0,0,cv.width,cv.height);P.forEach(p=>{p.y+=p.vy;p.x+=p.vx;p.a+=.1;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);ctx.fillStyle=p.c;ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*.6);ctx.restore();});if(++f<140)requestAnimationFrame(loop);else cv.remove();})();
+}
+
+/* ============================================================
+   INICIO
+   ============================================================ */
+checarRacha(); pintarTop(); pintarIconos(); pintarChipsProfe(); pintarSelectCursos(); pintarHome();
+</script>
+</body>
+</html>
