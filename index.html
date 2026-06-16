@@ -246,11 +246,14 @@ textarea.fld{min-height:130px;resize:vertical;line-height:1.5}
       <select class="fld" id="nm-curso"></select>
       <label class="lbl">Icono</label>
       <div class="chip-fila" id="nm-iconos"></div>
-      <label class="lbl">Pega tus apuntes (una tarjeta por renglón, con ::)</label>
-      <textarea class="fld" id="nm-pegado" placeholder="¿Qué cuenta se carga al comprar mercancía de contado? :: Almacén (es activo y aumenta)
-La partida doble dice que :: a todo cargo corresponde un abono por el mismo importe
-El Debe es el lado :: izquierdo de la cuenta"></textarea>
-      <div class="hint">💡 Formato: <code>pregunta :: respuesta</code> en cada renglón. También sirve <code>=</code> o <code>-</code>. Los renglones vacíos se ignoran.</div>
+      <label class="lbl">Pega tus apuntes (texto libre, viñetas o con ::)</label>
+      <textarea class="fld" id="nm-pegado" placeholder="Pega aquí el resumen de tu clase tal cual. Por ejemplo:
+
+Propuesta de valor: lo que hace que el cliente te elija a ti
+Startup: institución diseñada para crear algo nuevo con incertidumbre extrema
+- Emprendedor: nace con genotipo de optimismo e innovación
+- Empresario: se forma con educación y liderazgo"></textarea>
+      <div class="hint">💡 Detecto automáticamente líneas tipo <code>Concepto: explicación</code> y limpio viñetas, números y negritas. También puedes usar <code>concepto :: respuesta</code> para control total. Los títulos sin explicación se ignoran.</div>
       <div style="margin-top:14px"></div>
       <button class="btn" id="btn-crear" onclick="guardarMazo()">Crear mazo de estudio</button>
     </div>
@@ -709,15 +712,33 @@ function guardarMazo(){
   document.getElementById('nm-nombre').value=''; document.getElementById('nm-pegado').value='';
   document.getElementById('nm-curso').value=''; iconoSel='📒'; pintarIconos(); pintarMisMazos(); pintarCursos();
 }
+// limpia marcas de markdown al inicio de un renglón (encabezados, viñetas, números, checkboxes, negritas)
+function limpiarMd(l){
+  l=l.trim();                          // quita sangría primero
+  l=l.replace(/^#{1,6}\s*/,'');        // ## Encabezado
+  l=l.replace(/^[\-*•·▪◦]\s+/,'');     // - viñeta
+  l=l.replace(/^\d+[\.\)]\s+/,'');     // 1. o 1)
+  l=l.replace(/^\[[ xX]?\]\s*/,'');    // [ ] checkbox
+  l=l.replace(/\*\*/g,'').replace(/__/g,'').replace(/`/g,''); // **negrita** `code`
+  return l.trim();
+}
+// convierte apuntes (texto libre o con formato) en tarjetas de estudio
 function parsearApuntes(txt){
   const out=[];
-  txt.split('\n').forEach(l=>{
-    l=l.trim(); if(!l)return;
-    let sep=null;
-    if(l.includes('::'))sep='::'; else if(l.includes(' = '))sep=' = '; else if(l.includes(' - '))sep=' - '; else if(l.includes('='))sep='=';
-    if(!sep)return;
-    const p=l.split(sep), q=p.shift().trim(), a=p.join(sep).trim();
-    if(q&&a)out.push({tipo:'flash',q,a});
+  txt.split('\n').forEach(raw=>{
+    let l=limpiarMd(raw);
+    if(l.length<4)return;
+    let q=null,a=null;
+    if(l.includes('::')){const p=l.split('::');q=p.shift();a=p.join('::');}
+    else if(l.includes(' = ')){const p=l.split(' = ');q=p.shift();a=p.join(' = ');}
+    else{
+      // "Concepto: explicación" — exige dos puntos seguidos de espacio (así "12:04" NO se rompe)
+      const m=l.match(/^([^:]{2,70}):\s+(\S.*)$/);
+      if(m){q=m[1];a=m[2];}
+      else if(l.includes(' - ')){const p=l.split(' - ');q=p.shift();a=p.join(' - ');}
+      else if(l.includes(' — ')){const p=l.split(' — ');q=p.shift();a=p.join(' — ');}
+    }
+    if(q&&a){q=q.trim();a=a.trim();if(q.length>=2&&a.length>=2)out.push({tipo:'flash',q,a});}
   });
   return out;
 }
