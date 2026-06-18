@@ -203,6 +203,24 @@ textarea.fld{min-height:130px;resize:vertical;line-height:1.5}
 .escribe-input{width:100%;font-family:var(--fuente);font-weight:800;font-size:1.1rem;border:2px solid var(--gris-cl);border-bottom-width:4px;border-radius:14px;padding:15px 16px;background:var(--gris-bg);color:var(--tinta);text-align:center}
 .escribe-input:focus{outline:none;border-color:var(--azul);background:#fff}
 
+/* recompensas Cineteca Trikles */
+.reward{background:var(--blanco);border:2px solid var(--gris-cl);border-bottom-width:5px;border-radius:var(--radio);padding:14px;margin-bottom:12px}
+.reward .rw-top{display:flex;align-items:center;gap:12px}
+.reward .rw-ic{font-size:1.9rem}
+.reward .rw-tit{flex:1;min-width:0}
+.reward .rw-tit b{display:block;font-size:1rem}
+.reward .rw-tit small{color:var(--gris);font-weight:700;font-size:.8rem}
+.reward .mini-barra{height:11px;background:var(--gris-cl);border-radius:99px;overflow:hidden;margin-top:10px}
+.reward .mini-barra>i{display:block;height:100%;border-radius:99px}
+.reward .rw-prog{display:block;color:var(--gris);font-weight:800;font-size:.78rem;margin-top:6px}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:flex;align-items:center;justify-content:center;padding:24px;animation:entra .2s}
+.modal{background:var(--blanco);border-radius:22px;padding:24px;max-width:360px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.modal h3{font-size:1.3rem;margin:6px 0}
+.cupon-cod{font-size:1.5rem;font-weight:900;letter-spacing:2px;color:var(--verde-osc);background:#eafce0;border:2px dashed var(--verde);border-radius:14px;padding:16px;margin:16px 0;word-break:break-all}
+.cupon-lista{max-height:300px;overflow:auto;margin:12px 0}
+.cupon-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;background:var(--gris-bg);border-radius:10px;margin-bottom:8px;font-weight:800;font-size:.9rem}
+.cupon-row small{color:var(--gris);font-weight:700;white-space:nowrap}
+
 .pie{text-align:center;color:#bbb;font-size:.72rem;font-weight:700;padding:24px}
 </style>
 </head>
@@ -227,6 +245,8 @@ textarea.fld{min-height:130px;resize:vertical;line-height:1.5}
       <div class="nivel-top"><b id="nivel-nombre">Nivel 1 · Aprendiz</b><small id="nivel-xp">0 / 100 XP</small></div>
       <div class="barra"><i id="nivel-barra" style="width:0%"></i></div>
     </div>
+
+    <div id="recompensas-home"></div>
 
     <div id="recordatorios"></div>
 
@@ -463,7 +483,7 @@ const MAZOS = [
    ESTADO
    ============================================================ */
 const KEY='contaquest_v2';
-const estadoBase={nombre:'',xp:0,gemas:0,racha:0,ultimoDia:'',aciertos:0,lecciones:0,progresoMazo:{},cursos:[],misMazos:[],profes:[],iaUrl:'',iaToken:'',retoActual:null,seed:false};
+const estadoBase={nombre:'',xp:0,gemas:0,racha:0,ultimoDia:'',aciertos:0,lecciones:0,progresoMazo:{},cursos:[],misMazos:[],profes:[],iaUrl:'',iaToken:'',retoActual:null,canjeados:{paletas:0,entradas:0},cupones:[],seed:false};
 let S=cargar();
 let AUTH=null; try{AUTH=JSON.parse(localStorage.getItem('cq_auth')||'null');}catch(e){}
 let syncT=null;
@@ -582,6 +602,9 @@ if(!S.seed){
   }
   S.seed=true; guardar();
 }
+// normaliza recompensas (copias frescas para no compartir referencia con estadoBase)
+S.canjeados=Object.assign({paletas:0,entradas:0}, S.canjeados||{});
+S.cupones=Array.isArray(S.cupones)?S.cupones.slice():[];
 
 /* racha */
 function hoyStr(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
@@ -624,6 +647,7 @@ function pintarHome(){
   document.getElementById('nivel-xp').textContent=nv.hayMas?`${S.xp} / ${nv.techo} XP`:`${S.xp} XP · ¡Máximo!`;
   document.getElementById('nivel-barra').style.width=nv.pct+'%';
 
+  pintarRecompensas();
   pintarRecordatorios();
 
   // biblioteca general
@@ -660,6 +684,61 @@ function tarjetaMazo(m,propio){
     <div class="txt"><b>${escapeHtml(m.nombre)}</b><small>${escapeHtml(m.desc||(total+' tarjetas'))} · ${total} 🃏</small>
     <div class="mini-barra"><i style="width:${pct}%"></i></div></div><div class="flecha">›</div>`;
   return b;
+}
+
+/* ----- recompensas Cineteca Trikles ----- */
+const PTS_PALETA=1000, PTS_ENTRADA=2000;
+function recompensasGanadas(){return {paletas:Math.floor(S.xp/PTS_PALETA), entradas:Math.floor(S.xp/PTS_ENTRADA)};}
+function codigoCupon(pre){const n=(Date.now().toString(36)+Math.random().toString(36).slice(2)).toUpperCase().replace(/[^A-Z0-9]/g,'');return 'CQ-'+pre+'-'+n.slice(0,6);}
+function pintarRecompensas(){
+  const cont=document.getElementById('recompensas-home'); if(!cont)return;
+  const g=recompensasGanadas();
+  const dp=g.paletas-(S.canjeados.paletas||0), de=g.entradas-(S.canjeados.entradas||0);
+  const pp=S.xp%PTS_PALETA, pe=S.xp%PTS_ENTRADA;
+  cont.innerHTML=`<div class="seccion-tit">🎁 Recompensas · Cineteca Trikles</div>
+   <div class="mazos">
+     <div class="reward">
+       <div class="rw-top"><span class="rw-ic">🍭</span>
+         <div class="rw-tit"><b>Cupón de paleta</b><small>Dulcería · cada ${PTS_PALETA.toLocaleString('es-MX')} ⭐</small></div>
+         ${dp>0?`<button class="btn sm" onclick="canjear('paletas')">Canjear (${dp})</button>`:''}</div>
+       <div class="mini-barra"><i style="width:${Math.round(pp/PTS_PALETA*100)}%;background:var(--morado)"></i></div>
+       <small class="rw-prog">Te faltan ${(PTS_PALETA-pp).toLocaleString('es-MX')} ⭐ para el siguiente</small>
+     </div>
+     <div class="reward">
+       <div class="rw-top"><span class="rw-ic">🎬</span>
+         <div class="rw-tit"><b>Entrada al cine</b><small>Taquilla · cada ${PTS_ENTRADA.toLocaleString('es-MX')} ⭐</small></div>
+         ${de>0?`<button class="btn sm azul" onclick="canjear('entradas')">Canjear (${de})</button>`:''}</div>
+       <div class="mini-barra"><i style="width:${Math.round(pe/PTS_ENTRADA*100)}%;background:var(--azul)"></i></div>
+       <small class="rw-prog">Te faltan ${(PTS_ENTRADA-pe).toLocaleString('es-MX')} ⭐ para la siguiente</small>
+     </div>
+     ${S.cupones.length?`<button class="btn ghost sm" onclick="verCupones()">🎟️ Ver mis cupones (${S.cupones.length})</button>`:''}
+   </div>`;
+}
+function canjear(tipo){
+  const g=recompensasGanadas(), disp=g[tipo]-(S.canjeados[tipo]||0);
+  if(disp<=0){toast('Aún no tienes ese cupón disponible');return;}
+  const codigo=codigoCupon(tipo==='paletas'?'PAL':'CINE');
+  S.canjeados[tipo]=(S.canjeados[tipo]||0)+1;
+  S.cupones.unshift({tipo, codigo, fecha:Date.now()});
+  guardar(); pintarRecompensas();
+  mostrarCupon(tipo, codigo);
+}
+function mostrarCupon(tipo, codigo){
+  const nombre=tipo==='paletas'?'🍭 Cupón de paleta':'🎬 Entrada al cine';
+  const ov=document.createElement('div'); ov.className='modal-ov';
+  ov.innerHTML=`<div class="modal"><div style="font-size:3rem">🎉</div><h3>${nombre}</h3>
+    <p class="sub" style="text-align:center">Muestra este código en <b>Cineteca Trikles</b> para canjearlo.</p>
+    <div class="cupon-cod">${escapeHtml(codigo)}</div>
+    <button class="btn" onclick="this.closest('.modal-ov').remove()">¡Listo!</button></div>`;
+  document.body.appendChild(ov); party();
+}
+function verCupones(){
+  const lista=S.cupones.map(c=>`<div class="cupon-row"><span>${c.tipo==='paletas'?'🍭':'🎬'} ${escapeHtml(c.codigo)}</span><small>${new Date(c.fecha).toLocaleDateString('es-MX')}</small></div>`).join('');
+  const ov=document.createElement('div'); ov.className='modal-ov';
+  ov.innerHTML=`<div class="modal" style="text-align:left"><h3 style="text-align:center">🎟️ Mis cupones</h3>
+    <div class="cupon-lista">${lista||'<div class="vacio">Aún no canjeas cupones.</div>'}</div>
+    <button class="btn" onclick="this.closest('.modal-ov').remove()">Cerrar</button></div>`;
+  document.body.appendChild(ov);
 }
 
 /* recordatorios de profes en el home */
