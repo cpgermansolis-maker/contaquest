@@ -181,6 +181,28 @@ textarea.fld{min-height:130px;resize:vertical;line-height:1.5}
 
 .toast{position:fixed;top:74px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--tinta);color:#fff;padding:12px 20px;border-radius:99px;font-weight:800;font-size:.9rem;z-index:200;opacity:0;transition:.3s;pointer-events:none;box-shadow:0 6px 16px rgba(0,0,0,.25);max-width:90%;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* selección de mazos para el reto */
+.sel-mazo{display:flex;align-items:center;gap:12px;background:var(--blanco);border:2px solid var(--gris-cl);border-bottom-width:4px;border-radius:14px;padding:13px;margin-bottom:10px;width:100%;text-align:left}
+.sel-mazo:active{transform:translateY(2px)}
+.sel-mazo.on{border-color:var(--verde);background:#f1ffe6}
+.sel-mazo .emoji{width:44px;height:44px;flex:none;border-radius:12px;display:grid;place-items:center;font-size:1.4rem;color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+.sel-mazo .txt{flex:1;min-width:0}
+.sel-mazo .txt b{display:block;font-size:.98rem}
+.sel-mazo .txt small{color:var(--gris);font-weight:700;font-size:.8rem}
+.sel-mazo .chk{width:26px;height:26px;flex:none;border-radius:50%;border:2px solid var(--gris-cl);display:grid;place-items:center;color:#fff;font-weight:900;font-size:.9rem}
+.sel-mazo.on .chk{background:var(--verde);border-color:var(--verde)}
+
+/* anillo segmentado del reto */
+.reto-mapa{text-align:center;padding:10px 18px}
+.reto-mapa h2{font-size:1.3rem;font-weight:900;margin-bottom:4px}
+.reto-mapa .sub2{color:var(--gris);font-weight:700;font-size:.9rem;margin-bottom:18px}
+.anillo-wrap{position:relative;width:200px;height:200px;margin:8px auto 18px;cursor:pointer}
+.anillo-wrap .centro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.anillo-wrap .centro .ic{font-size:2.6rem;line-height:1}
+.anillo-wrap .centro small{font-weight:900;color:var(--gris);font-size:.8rem;margin-top:2px}
+.escribe-input{width:100%;font-family:var(--fuente);font-weight:800;font-size:1.1rem;border:2px solid var(--gris-cl);border-bottom-width:4px;border-radius:14px;padding:15px 16px;background:var(--gris-bg);color:var(--tinta);text-align:center}
+.escribe-input:focus{outline:none;border-color:var(--azul);background:#fff}
+
 .pie{text-align:center;color:#bbb;font-size:.72rem;font-weight:700;padding:24px}
 </style>
 </head>
@@ -304,6 +326,23 @@ Startup: institución diseñada para crear algo nuevo con incertidumbre extrema
     <div style="height:30px"></div>
   </section>
 
+  <!-- RETO IA -->
+  <section class="pantalla" id="p-reto">
+    <div class="hero"><h1>🎯 Reto con IA</h1><p>Elige varios mazos y la IA te arma un examen estilo Duolingo</p></div>
+    <div id="reto-cuerpo"></div>
+    <div style="height:30px"></div>
+  </section>
+
+  <!-- RETO · LECCIÓN -->
+  <section class="pantalla" id="p-reto-leccion">
+    <div class="leccion-top">
+      <button class="cerrar" onclick="salirReto()">✕</button>
+      <div class="progreso"><i id="rl-prog" style="width:0%"></i></div>
+      <div class="vidas" id="rl-vidas">❤️ 5</div>
+    </div>
+    <div class="leccion-cuerpo" id="rl-cuerpo"></div>
+  </section>
+
   <!-- PERFIL -->
   <section class="pantalla" id="p-perfil">
     <div class="hero"><h1>👤 Mi progreso</h1><p>Tu constancia es lo que te hará dominar el tema</p></div>
@@ -341,6 +380,7 @@ Startup: institución diseñada para crear algo nuevo con incertidumbre extrema
   <nav class="nav" id="nav">
     <button class="on" data-p="home" onclick="ir('home')"><span class="ic">🏠</span>Inicio</button>
     <button data-p="crear" onclick="ir('crear')"><span class="ic">✏️</span>Apuntes</button>
+    <button data-p="reto" onclick="ir('reto')"><span class="ic">🎯</span>Reto</button>
     <button data-p="profes" onclick="ir('profes')"><span class="ic">👔</span>Profes</button>
     <button data-p="perfil" onclick="ir('perfil')"><span class="ic">👤</span>Perfil</button>
   </nav>
@@ -422,7 +462,7 @@ const MAZOS = [
    ESTADO
    ============================================================ */
 const KEY='contaquest_v2';
-const estadoBase={nombre:'',xp:0,gemas:0,racha:0,ultimoDia:'',aciertos:0,lecciones:0,progresoMazo:{},cursos:[],misMazos:[],profes:[],iaUrl:'',iaToken:'',seed:false};
+const estadoBase={nombre:'',xp:0,gemas:0,racha:0,ultimoDia:'',aciertos:0,lecciones:0,progresoMazo:{},cursos:[],misMazos:[],profes:[],iaUrl:'',iaToken:'',retoActual:null,seed:false};
 let S=cargar();
 
 function cargar(){
@@ -555,13 +595,14 @@ function pintarRecordatorios(){
 function ir(p){
   document.querySelectorAll('.pantalla').forEach(x=>x.classList.remove('activa'));
   document.getElementById('p-'+p).classList.add('activa');
-  let navKey=p; if(p==='profe-det')navKey='profes';
+  let navKey=p; if(p==='profe-det')navKey='profes'; if(p==='reto-leccion')navKey='reto';
   document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===navKey));
   document.getElementById('nav').style.display='flex';
   document.getElementById('topbar').style.display='flex';
   window.scrollTo(0,0);
   if(p==='home')pintarHome();
   if(p==='crear'){pintarCursos();pintarSelectCursos();pintarMisMazos();}
+  if(p==='reto')pintarReto();
   if(p==='profes'){pintarSelectCursos();pintarProfes();}
   if(p==='perfil')pintarPerfil();
 }
@@ -941,6 +982,189 @@ function verProfe(id){
     </div>`;
   ir('profe-det');
 }
+
+/* ============================================================
+   RETO CON IA  (examen estilo Duolingo desde varios mazos)
+   ============================================================ */
+let retoSel=new Set(), retoForzarSel=false, R=null;
+
+function mazoPorId(id){return MAZOS.find(m=>m.id===id)||S.misMazos.find(m=>m.id===id);}
+function todosLosMazos(){return [...MAZOS,...S.misMazos];}
+function cartasDeMazo(m){return m.cards.map(c=>c.tipo==='multi'?{q:c.q,a:c.opciones[c.correcta]}:{q:c.q,a:c.a});}
+function normaliza(s){return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9ñ ]/gi,'').trim().replace(/\s+/g,' ');}
+
+function pintarReto(){
+  const cont=document.getElementById('reto-cuerpo');
+  if(S.retoActual && !retoForzarSel) cont.innerHTML=vistaMapa();
+  else cont.innerHTML=vistaSeleccion();
+}
+function vistaSeleccion(){
+  const items=todosLosMazos().map(m=>{
+    const on=retoSel.has(m.id);
+    return `<button class="sel-mazo ${on?'on':''}" onclick="toggleSelDeck('${m.id}')">
+      <div class="emoji ${m.color||'c-azul'}">${m.icono||'📘'}</div>
+      <div class="txt"><b>${escapeHtml(m.nombre)}</b><small>${m.cards.length} tarjetas</small></div>
+      <div class="chk">${on?'✓':''}</div></button>`;
+  }).join('');
+  const total=[...retoSel].reduce((s,id)=>{const d=mazoPorId(id);return s+(d?d.cards.length:0);},0);
+  const hayIa=!!S.iaUrl;
+  return `${S.retoActual?'<div style="padding:0 18px 4px"><button class="btn ghost sm" onclick="verRetoActual()">‹ Volver a mi reto actual</button></div>':''}
+    <div class="seccion-tit">Elige uno o más mazos</div>
+    <div class="mazos">${items||'<div class="vacio">No hay mazos todavía.</div>'}</div>
+    <div style="padding:0 18px">
+      <div class="hint" style="margin-bottom:12px">Seleccionados: <b>${retoSel.size}</b> · ${total} tarjetas. La IA hará 2–4 lecciones.</div>
+      ${hayIa?'':'<div class="hint" style="background:#ffdfe0;border-color:#ffb3b3;color:#a33;margin-bottom:12px">⚠️ Primero configura tu generador en <b>Perfil</b>.</div>'}
+      <button class="btn morado" id="btn-reto" onclick="generarReto()" ${(!hayIa||!retoSel.size)?'disabled':''}>✨ Generar reto con IA</button>
+    </div>`;
+}
+function toggleSelDeck(id){ if(retoSel.has(id))retoSel.delete(id); else retoSel.add(id); pintarReto(); }
+function verRetoActual(){ retoForzarSel=false; pintarReto(); }
+function nuevoReto(){ retoSel=new Set(); retoForzarSel=true; pintarReto(); }
+
+function vistaMapa(){
+  const r=S.retoActual, total=r.lecciones.length, done=r.hechas.filter(Boolean).length;
+  const completo=done>=total, nextIdx=r.hechas.findIndex(h=>!h);
+  return `<div class="reto-mapa">
+      <h2>${escapeHtml(r.titulo||'Reto')}</h2>
+      <div class="sub2">${done} / ${total} lecciones completadas</div>
+      <div class="anillo-wrap" onclick="jugarSiguienteLeccion()">
+        ${anilloSVG(total,done)}
+        <div class="centro"><div class="ic">${completo?'🏆':'▶️'}</div><small>${completo?'¡Completado!':'Lección '+(nextIdx+1)}</small></div>
+      </div>
+      <button class="btn" onclick="jugarSiguienteLeccion()" ${completo?'disabled':''}>${completo?'Reto terminado':'Empezar lección '+(nextIdx+1)}</button>
+      <div style="height:10px"></div>
+      <button class="btn ghost" onclick="nuevoReto()">Crear otro reto</button>
+    </div>
+    <div class="seccion-tit">Lecciones</div>
+    <div class="mazos">${r.lecciones.map((l,i)=>`
+      <div class="mazo"><div class="emoji ${r.hechas[i]?'c-verde':'c-gris'}">${r.hechas[i]?'✓':(i+1)}</div>
+        <div class="txt"><b>${escapeHtml(l.titulo||('Lección '+(i+1)))}</b><small>${l.preguntas.length} preguntas</small></div>
+        <button class="btn sm ${r.hechas[i]?'ghost':''}" style="width:auto" onclick="iniciarRetoLeccion(${i})">${r.hechas[i]?'Repasar':'Jugar'}</button>
+      </div>`).join('')}</div>`;
+}
+function jugarSiguienteLeccion(){ const r=S.retoActual; if(!r)return; const n=r.hechas.findIndex(h=>!h); if(n<0)return; iniciarRetoLeccion(n); }
+
+/* anillo segmentado en SVG */
+function polar(cx,cy,r,deg){const a=(deg-90)*Math.PI/180;return [cx+r*Math.cos(a),cy+r*Math.sin(a)];}
+function arco(cx,cy,r,d0,d1){const p0=polar(cx,cy,r,d0),p1=polar(cx,cy,r,d1),large=(d1-d0)>180?1:0;return `M ${p0[0].toFixed(1)} ${p0[1].toFixed(1)} A ${r} ${r} 0 ${large} 1 ${p1[0].toFixed(1)} ${p1[1].toFixed(1)}`;}
+function anilloSVG(total,done){
+  const cx=100,cy=100,r=82,sw=14,gap=total>1?7:0; let segs='';
+  for(let i=0;i<total;i++){
+    const d0=i*(360/total)+gap/2, d1=(i+1)*(360/total)-gap/2;
+    segs+=`<path d="${arco(cx,cy,r,d0,d1)}" stroke="${i<done?'#58cc02':'#e0e0e0'}" stroke-width="${sw}" stroke-linecap="round" fill="none"/>`;
+  }
+  return `<svg width="200" height="200" viewBox="0 0 200 200">${segs}</svg>`;
+}
+
+/* ----- generar el examen con la IA ----- */
+async function generarReto(){
+  if(!S.iaUrl){toast('Configura tu generador en Perfil');ir('perfil');return;}
+  if(!retoSel.size){toast('Elige al menos un mazo');return;}
+  let cards=[];
+  retoSel.forEach(id=>{const d=mazoPorId(id);if(d)cards=cards.concat(cartasDeMazo(d));});
+  if(cards.length<4){toast('Elige mazos con más tarjetas');return;}
+  cards=cards.slice(0,60);
+  const btn=document.getElementById('btn-reto'), orig=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='✨ Creando tu reto…';}
+  try{
+    const res=await fetch(S.iaUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({mode:'exam',token:S.iaToken||'',cards})});
+    const data=await res.json();
+    if(data.error){toast('IA: '+data.error);return;}
+    const lecciones=(data.lecciones||[]).filter(l=>l.preguntas&&l.preguntas.length);
+    if(!lecciones.length){toast('La IA no generó lecciones');return;}
+    S.retoActual={titulo:data.titulo||'Reto de estudio',deckIds:[...retoSel],lecciones,hechas:lecciones.map(()=>false)};
+    guardar(); retoForzarSel=false; pintarReto();
+    toast('🎯 ¡Reto creado! '+lecciones.length+' lecciones');
+  }catch(err){toast('No se pudo conectar con tu IA');}
+  finally{if(btn){btn.disabled=false;btn.textContent=orig;}}
+}
+
+/* ----- jugar una lección del reto ----- */
+function iniciarRetoLeccion(idx){
+  const lec=S.retoActual&&S.retoActual.lecciones[idx]; if(!lec)return;
+  R={idx, cola:lec.preguntas.map(p=>({p})), i:0, aciertos:0, fallos:0, vidas:5, contestada:false, sel:null};
+  document.querySelectorAll('.pantalla').forEach(x=>x.classList.remove('activa'));
+  document.getElementById('p-reto-leccion').classList.add('activa');
+  document.getElementById('nav').style.display='none';
+  document.getElementById('topbar').style.display='none';
+  pintarRetoPregunta();
+}
+function pintarRetoPregunta(){
+  const item=R.cola[R.i]; R.contestada=false; R.sel=null;
+  document.getElementById('rl-prog').style.width=Math.round(R.i/R.cola.length*100)+'%';
+  document.getElementById('rl-vidas').textContent='❤️ '+R.vidas;
+  const cuerpo=document.getElementById('rl-cuerpo');
+  if(!item)return finRetoLeccion();
+  const p=item.p;
+  if(p.tipo==='escribe'){
+    cuerpo.innerHTML=`<div class="tag-tipo">Escribe la respuesta</div><div class="pregunta">${escapeHtml(p.q)}</div>
+      <input class="escribe-input" id="rl-input" placeholder="Tu respuesta…" autocomplete="off" oninput="document.getElementById('btn-rl').disabled=!this.value.trim()">
+      <div style="height:90px"></div>
+      <div class="barra-accion"><button class="btn" id="btn-rl" disabled onclick="retoComprobarEscribe()">Comprobar</button></div>`;
+    setTimeout(()=>{const el=document.getElementById('rl-input');if(el)el.focus();},120);
+  }else{
+    const baseOps=p.tipo==='vf'?['Verdadero','Falso']:(p.opciones||[]).slice();
+    const baseCor=p.tipo==='vf'?(p.vf?0:1):p.correcta;
+    const idxs=baseOps.map((_,k)=>k);
+    for(let k=idxs.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));const t=idxs[k];idxs[k]=idxs[j];idxs[j]=t;}
+    R.opc=idxs.map(k=>baseOps[k]); R.cor=idxs.indexOf(baseCor);
+    const ops=R.opc.map((o,k)=>`<button class="opcion" data-i="${k}" onclick="retoElegir(${k})">${escapeHtml(o)}</button>`).join('');
+    const tag=p.tipo==='vf'?'¿Verdadero o falso?':'Elige la respuesta correcta';
+    cuerpo.innerHTML=`<div class="tag-tipo">${tag}</div><div class="pregunta">${escapeHtml(p.q)}</div>
+      <div class="opciones" id="rl-ops">${ops}</div><div style="height:90px"></div>
+      <div class="barra-accion"><button class="btn" id="btn-rl" disabled onclick="retoComprobar()">Comprobar</button></div>`;
+  }
+  window.scrollTo(0,0);
+}
+function retoElegir(k){if(R.contestada)return;R.sel=k;document.querySelectorAll('#rl-ops .opcion').forEach(b=>b.classList.toggle('sel',+b.dataset.i===k));document.getElementById('btn-rl').disabled=false;}
+function retoRegistrar(bien){
+  if(bien){R.aciertos++;S.aciertos++;}
+  else{R.fallos++;R.vidas--;const item=R.cola[R.i];if(!item.repaso)R.cola.push({p:item.p,repaso:true});}
+}
+function retoComprobar(){
+  if(R.sel==null||R.contestada)return; R.contestada=true;
+  const bien=R.sel===R.cor;
+  document.querySelectorAll('#rl-ops .opcion').forEach(b=>{b.disabled=true;const k=+b.dataset.i;if(k===R.cor)b.classList.add('bien');else if(k===R.sel)b.classList.add('mal');});
+  const p=R.cola[R.i].p; retoRegistrar(bien);
+  mostrarFeedback(bien,{opciones:R.opc,correcta:R.cor,exp:p.exp},()=>retoAvanzar());
+}
+function retoComprobarEscribe(){
+  if(R.contestada)return;
+  const el=document.getElementById('rl-input'), val=el?el.value:'', p=R.cola[R.i].p;
+  const bien=normaliza(val)===normaliza(p.respuesta);
+  R.contestada=true; if(el){el.disabled=true;el.style.borderColor=bien?'var(--verde)':'var(--rojo)';}
+  retoRegistrar(bien);
+  mostrarFeedback(bien,{opciones:[p.respuesta],correcta:0,exp:p.exp},()=>retoAvanzar());
+}
+function retoAvanzar(){
+  if(R.vidas<=0)return finRetoLeccion(true);
+  R.i++;
+  if(R.i>=R.cola.length)return finRetoLeccion();
+  pintarRetoPregunta();
+}
+function finRetoLeccion(sinVidas){
+  const completo=!sinVidas, r=S.retoActual;
+  if(completo){
+    r.hechas[R.idx]=true; S.lecciones++; S.xp+=15; S.gemas+=3;
+    if(r.hechas.every(Boolean)){S.xp+=30;S.gemas+=10;}
+    checarRacha(); guardar(); pintarTop();
+  }
+  const todo=completo && r.hechas.every(Boolean);
+  const prec=(R.aciertos+R.fallos)>0?Math.round(R.aciertos/(R.aciertos+R.fallos)*100):100;
+  document.getElementById('rl-prog').style.width='100%';
+  document.getElementById('rl-cuerpo').innerHTML=`<div class="fin">
+    <div class="trofeo">${completo?(todo?'🏆':'✅'):'💪'}</div>
+    <h2>${completo?(todo?'¡Reto completado!':'¡Lección completada!'):'¡Casi! Inténtalo otra vez'}</h2>
+    <p style="color:var(--gris);font-weight:700">${todo?'Completaste todas las lecciones del reto. ¡Excelente!':(completo?'Bien hecho. Vas por la siguiente lección.':'Te quedaste sin corazones, pero ya aprendiste varias.')}</p>
+    <div class="resumen"><div class="rcard"><div class="in"><small>Precisión</small><b style="color:var(--amarillo)">${prec}%</b></div></div>
+    <div class="rcard azul"><div class="in"><small>Lección</small><b style="color:var(--azul)">${R.idx+1}/${r.lecciones.length}</b></div></div></div>
+    <button class="btn" onclick="ir('reto')">Continuar</button>
+    ${!completo?`<div style="height:10px"></div><button class="btn ghost" onclick="iniciarRetoLeccion(${R.idx})">Reintentar</button>`:''}
+  </div>`;
+  if(completo)party();
+  window.scrollTo(0,0);
+}
+function salirReto(){ if(confirm('¿Salir de la lección? Perderás el avance de esta lección.'))ir('reto'); }
 
 /* ============================================================
    PERFIL
