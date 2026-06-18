@@ -346,6 +346,7 @@ Startup: institución diseñada para crear algo nuevo con incertidumbre extrema
   <!-- PERFIL -->
   <section class="pantalla" id="p-perfil">
     <div class="hero"><h1>👤 Mi progreso</h1><p>Tu constancia es lo que te hará dominar el tema</p></div>
+    <div id="pf-cuenta"></div>
     <div class="form-card" style="text-align:center">
       <div style="font-size:3.4rem">🎓</div>
       <h3 id="pf-nivel" style="margin-top:6px">Nivel 1 · Aprendiz</h3>
@@ -464,6 +465,8 @@ const MAZOS = [
 const KEY='contaquest_v2';
 const estadoBase={nombre:'',xp:0,gemas:0,racha:0,ultimoDia:'',aciertos:0,lecciones:0,progresoMazo:{},cursos:[],misMazos:[],profes:[],iaUrl:'',iaToken:'',retoActual:null,seed:false};
 let S=cargar();
+let AUTH=null; try{AUTH=JSON.parse(localStorage.getItem('cq_auth')||'null');}catch(e){}
+let syncT=null;
 
 function cargar(){
   try{
@@ -476,7 +479,98 @@ function cargar(){
   }catch(e){}
   return JSON.parse(JSON.stringify(estadoBase));
 }
-function guardar(){localStorage.setItem(KEY,JSON.stringify(S));}
+function guardar(){localStorage.setItem(KEY,JSON.stringify(S));programarSync();}
+
+/* ============================================================
+   CUENTA EN LA NUBE (login + sincronización)
+   ============================================================ */
+function guardarAuth(){ if(AUTH)localStorage.setItem('cq_auth',JSON.stringify(AUTH)); else localStorage.removeItem('cq_auth'); }
+function datosParaSync(){ const c=Object.assign({},S); delete c.iaUrl; delete c.iaToken; return c; }
+function aplicarDatos(d){ if(!d||typeof d!=='object')return; const url=S.iaUrl,tok=S.iaToken; S=Object.assign({},estadoBase,d,{iaUrl:url,iaToken:tok}); localStorage.setItem(KEY,JSON.stringify(S)); }
+async function apiCuenta(payload){
+  if(!S.iaUrl) throw new Error('Primero configura la URL del generador (abajo).');
+  payload.token=S.iaToken||'';
+  const r=await fetch(S.iaUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+  return r.json();
+}
+function programarSync(){
+  if(!AUTH||!S.iaUrl)return;
+  clearTimeout(syncT);
+  syncT=setTimeout(function(){ apiCuenta({action:'save',usuario:AUTH.usuario,sesion:AUTH.sesion,data:datosParaSync()}).catch(function(){}); },3000);
+}
+async function crearCuenta(){
+  const u=(document.getElementById('ac-user').value||'').trim(), c=document.getElementById('ac-pass').value||'';
+  if(u.length<3){toast('El usuario debe tener 3+ caracteres');return;}
+  if(c.length<4){toast('La contraseña debe tener 4+ caracteres');return;}
+  const b=document.getElementById('ac-signup'); const o=b.textContent; b.disabled=true;b.textContent='Creando…';
+  try{
+    const r=await apiCuenta({action:'signup',usuario:u,clave:c,data:datosParaSync()});
+    if(r.error){toast(r.error);return;}
+    AUTH={usuario:r.usuario,sesion:r.sesion};guardarAuth();
+    toast('🎉 Cuenta creada. Tu progreso ya se guarda en la nube.');
+    pintarCuenta();
+  }catch(e){toast(e.message||'Error de conexión');}
+  finally{b.disabled=false;b.textContent=o;}
+}
+async function iniciarSesion(){
+  const u=(document.getElementById('ac-user').value||'').trim(), c=document.getElementById('ac-pass').value||'';
+  if(!u||!c){toast('Escribe usuario y contraseña');return;}
+  const b=document.getElementById('ac-login'); const o=b.textContent; b.disabled=true;b.textContent='Entrando…';
+  try{
+    const r=await apiCuenta({action:'login',usuario:u,clave:c});
+    if(r.error){toast(r.error);return;}
+    AUTH={usuario:r.usuario,sesion:r.sesion};guardarAuth();
+    aplicarDatos(r.data);
+    toast('✅ ¡Bienvenido! Tu progreso se sincronizó.');
+    pintarTop();pintarCuenta();pintarPerfil();
+  }catch(e){toast(e.message||'Error de conexión');}
+  finally{b.disabled=false;b.textContent=o;}
+}
+function cerrarSesion(){ AUTH=null;guardarAuth();toast('Sesión cerrada. Tus datos siguen en este dispositivo.');pintarCuenta(); }
+async function sincronizarAhora(){
+  if(!AUTH)return;
+  try{
+    const r=await apiCuenta({action:'save',usuario:AUTH.usuario,sesion:AUTH.sesion,data:datosParaSync()});
+    if(r.error){toast(r.error);if(/sesi/i.test(r.error)){AUTH=null;guardarAuth();pintarCuenta();}return;}
+    toast('☁️ Progreso sincronizado');
+  }catch(e){toast('No se pudo sincronizar');}
+}
+async function sincronizarBajada(){
+  if(!AUTH||!S.iaUrl)return;
+  try{
+    const r=await apiCuenta({action:'load',usuario:AUTH.usuario,sesion:AUTH.sesion});
+    if(r.error){if(/sesi/i.test(r.error)){AUTH=null;guardarAuth();}return;}
+    aplicarDatos(r.data);pintarTop();
+    if(document.getElementById('p-home').classList.contains('activa'))pintarHome();
+  }catch(e){}
+}
+function pintarCuenta(){
+  const c=document.getElementById('pf-cuenta'); if(!c)return;
+  if(AUTH){
+    c.innerHTML=`<div class="form-card">
+      <h3>☁️ Mi cuenta</h3>
+      <p class="sub">Sesión iniciada como <b>${escapeHtml(AUTH.usuario)}</b>. Tu progreso se sincroniza solo.</p>
+      <button class="btn azul" onclick="sincronizarAhora()">Sincronizar ahora</button>
+      <div style="height:10px"></div>
+      <button class="btn ghost" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>`;
+  }else{
+    c.innerHTML=`<div class="form-card">
+      <h3>☁️ Iniciar sesión</h3>
+      <p class="sub">Crea una cuenta para guardar tu progreso en la nube y continuar en otro dispositivo.</p>
+      <label class="lbl">Usuario</label>
+      <input class="fld" id="ac-user" autocomplete="username" placeholder="tu_usuario">
+      <label class="lbl">Contraseña</label>
+      <input class="fld" id="ac-pass" type="password" autocomplete="current-password" placeholder="••••••">
+      <div style="margin-top:14px"></div>
+      <button class="btn" id="ac-login" onclick="iniciarSesion()">Iniciar sesión</button>
+      <div style="height:10px"></div>
+      <button class="btn ghost" id="ac-signup" onclick="crearCuenta()">Crear cuenta nueva</button>
+      <div class="hint" style="margin-top:10px">🔒 Usa una contraseña sencilla y única (no la de tu banco o correo). Se guarda cifrada.</div>
+      ${S.iaUrl?'':'<div class="hint" style="background:#ffdfe0;border-color:#ffb3b3;color:#a33;margin-top:10px">⚠️ Primero pega la URL del generador en la sección 🤖 (abajo). El inicio de sesión usa ese mismo servidor.</div>'}
+    </div>`;
+  }
+}
 
 // preseed de cursos
 if(!S.seed){
@@ -1170,6 +1264,7 @@ function salirReto(){ if(confirm('¿Salir de la lección? Perderás el avance de
    PERFIL
    ============================================================ */
 function pintarPerfil(){
+  pintarCuenta();
   const nv=nivelActual();
   document.getElementById('pf-nivel').textContent=`Nivel ${nv.num} · ${nv.nombre}`;
   const frases=['Apenas empiezas. ¡A darle!','Vas tomando ritmo 💪','¡Buen avance!','Ya dominas lo básico 🔥','Nivel pro de finanzas 🤓','Casi un experto contable','¡Maestro del balance! 🏆'];
@@ -1187,6 +1282,7 @@ function guardarIaUrl(v){S.iaUrl=v.trim();guardar();toast('URL del generador gua
 function guardarIaToken(v){S.iaToken=v.trim();guardar();}
 function reiniciarTodo(){
   if(!confirm('Esto borra TODO: progreso, mazos, cursos y profes. ¿Continuar?'))return;
+  AUTH=null; guardarAuth(); // cerrar sesión para no borrar también la nube
   S=JSON.parse(JSON.stringify(estadoBase));
   S.cursos=[{id:'c1',nombre:'Creación de empresas de alto valor',icono:'🚀',color:'c-amarillo'},{id:'c2',nombre:'Contribuciones de las PyMEs',icono:'🏛️',color:'c-naranja'}];
   S.seed=true; guardar(); pintarTop(); pintarPerfil(); ir('home'); toast('Todo reiniciado');
@@ -1212,6 +1308,7 @@ function party(){
    INICIO
    ============================================================ */
 checarRacha(); pintarTop(); pintarIconos(); pintarChipsProfe(); pintarSelectCursos(); pintarHome();
+if(AUTH && S.iaUrl) sincronizarBajada();
 </script>
 </body>
 </html>
